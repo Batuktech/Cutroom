@@ -1,0 +1,37 @@
+@media (max-width: 760px) {
+  button,
+  a.button,
+  [role="menuitem"] {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+  .button-icon,
+  .top-search,
+  .color-options button,
+  .clip-checkbox {
+    width: 44px !important;
+    height: 44px !important;
+  }
+  input:not([type="checkbox"]):not([type="file"]),
+  select {
+    min-height: 44px;
+  }
+  .preview-toolbar {
+    height: auto;
+    min-height: 58px;
+  }
+  .transport {
+    height: auto;
+    min-height: 56px;
+  }
+  .export-view-control label {
+    min-height: 44px;
+  }
+  .segment-checkbox {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+}

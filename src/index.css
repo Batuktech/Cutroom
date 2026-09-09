@@ -1,0 +1,19 @@
+@import "@fontsource-variable/manrope";
+@import "@fontsource-variable/fraunces";
+@import "tailwindcss";
+@import "./styles/delivery.css";
+
+@import "./styles/base.css";
+@import "./styles/workspace.css";
+@import "./styles/pages.css";
+@import "./styles/editor.css";
+@import "./styles/responsive.css";
+@import "./styles/mobile-controls.css";
+
+@font-face {
+  font-family: "Cutroom Caption Fallback";
+  src: url("/fonts/NotoSans-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
