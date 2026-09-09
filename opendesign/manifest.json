@@ -1,0 +1,47 @@
+{
+  "generated": "2026-09-07T22:43:33.261294+00:00",
+  "sections": [
+    {
+      "id": "mockups",
+      "label": "Mockups",
+      "groups": [
+        {
+          "slug": "cutroom",
+          "files": [
+            {
+              "label": "editor-concept.html",
+              "path": "mockups/cutroom/editor-concept.html"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "design-systems",
+      "label": "Design Systems",
+      "groups": [
+        {
+          "slug": "cutroom",
+          "files": [
+            {
+              "label": "SKILL.md",
+              "path": "design-systems/cutroom/SKILL.md"
+            },
+            {
+              "label": "colors_and_type.css",
+              "path": "design-systems/cutroom/colors_and_type.css"
+            },
+            {
+              "label": "fonts/OFL-Manrope.txt",
+              "path": "design-systems/cutroom/fonts/OFL-Manrope.txt"
+            },
+            {
+              "label": "fonts/manrope.woff2",
+              "path": "design-systems/cutroom/fonts/manrope.woff2"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

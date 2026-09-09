@@ -1,0 +1,41 @@
+@font-face {
+  font-family: "Manrope";
+  src: url("./fonts/manrope.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+  --canvas: #151714;
+  --panel: #20231e;
+  --panel-raised: #292d26;
+  --ink: #f5f5ef;
+  --muted: #b3b8ac;
+  --line: #383e32;
+  --accent: #d6f58a;
+  --accent-ink: #20271a;
+  --error: #ffb4a5;
+  --font-interface: "Manrope", sans-serif;
+  --font-editorial: "Fraunces", Georgia, serif;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --radius-control: 6px;
+  --radius-panel: 10px;
+  --motion-feedback: 140ms;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--canvas); color: var(--ink); font-family: var(--font-interface); }
+a { color: inherit; }
+button, input, select { font: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}

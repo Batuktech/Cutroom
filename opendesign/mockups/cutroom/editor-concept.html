@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CUTROOM | Editor design concept</title>
+  <link rel="stylesheet" href="../../design-systems/cutroom/colors_and_type.css">
+  <style>
+    body { font-size: 13px; line-height: 1.55; }
+    .concept-note { padding: 10px 24px; border-bottom: 1px solid var(--line); color: var(--muted); text-align: center; }
+    .concept-note strong { color: var(--ink); }
+    .shell { display: grid; grid-template-columns: 88px minmax(0, 1fr); min-height: calc(100dvh - 42px); }
+    .rail { border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; padding: 24px 8px; gap: 12px; }
+    .brand { width: 36px; height: 36px; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-size: 23px; font-weight: 800; transform: skew(-8deg); margin-bottom: 34px; }
+    .rail a { display: grid; place-items: center; min-height: 48px; width: 100%; text-decoration: none; font-size: 11px; color: var(--muted); border-radius: 6px; }
+    .rail a.active { background: var(--panel-raised); color: var(--accent); }
+    .rail a:hover { background: var(--panel); }
+    .rail .local { margin-top: auto; color: var(--muted); font-size: 10px; text-align: center; }
+    main { min-width: 0; }
+    .topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; justify-content: space-between; padding: 21px 28px; border-bottom: 1px solid var(--line); }
+    .wordmark { font-weight: 800; letter-spacing: -0.07em; font-size: 23px; margin-right: 22px; }
+    .crumb { color: var(--muted); }
+    .export { min-height: 44px; padding: 0 20px; background: var(--accent); border: 0; border-radius: 6px; color: var(--accent-ink); font-weight: 750; opacity: .7; }
+    .project-heading { padding: 27px 28px 22px; display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+    h1 { font-size: clamp(22px, 2.1vw, 30px); font-weight: 600; margin: 0 0 5px; letter-spacing: -.045em; }
+    p { margin: 0; }
+    .muted { color: var(--muted); }
+    .workspace { display: grid; grid-template-columns: 205px minmax(280px, 1fr) 290px; gap: 1px; background: var(--line); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .workspace > section { background: var(--canvas); min-width: 0; }
+    h2 { margin: 0; font-size: 13px; font-weight: 650; }
+    .section-bar { padding: 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); min-height: 55px; }
+    .count { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 11px; }
+    .library { padding: 16px; }
+    .media-thumb { aspect-ratio: 16/10; border: 1px solid var(--line); border-radius: 6px; display: grid; place-items: center; background: var(--panel); color: var(--muted); font-size: 11px; }
+    .filename { margin: 10px 0 3px; font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+    .media-details { display: flex; gap: 7px; color: var(--muted); font-size: 10px; }
+    .import { width: 100%; min-height: 44px; background: transparent; color: var(--muted); border: 1px dashed #59614f; border-radius: 6px; margin-top: 22px; }
+    .preview-wrap { padding: 23px; }
+    .preview { background: #080a07; min-height: 310px; aspect-ratio: 16/10; border: 1px solid var(--line); border-radius: 6px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 16px; }
+    .preview-top { display: flex; width: 100%; justify-content: space-between; color: var(--muted); font-size: 11px; }
+    .placeholder { text-align: center; color: var(--muted); }
+    .placeholder strong { display: block; font-size: 18px; font-weight: 500; color: var(--ink); margin-bottom: 8px; }
+    .caption { background: var(--accent); color: var(--accent-ink); padding: 5px 12px; font-size: clamp(15px, 1.3vw, 20px); font-weight: 800; }
+    .transport { display: flex; justify-content: center; align-items: center; gap: 24px; padding-top: 20px; color: var(--muted); }
+    .timecode { font-variant-numeric: tabular-nums; font-size: 12px; }
+    .play { min-height: 44px; min-width: 65px; background: var(--panel-raised); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); }
+    .transcript-head { border-bottom: 1px solid var(--line); padding: 13px 16px; color: var(--muted); font-size: 11px; }
+    .transcript-lines { padding: 11px 0; }
+    .transcript-line { padding: 12px 16px; display: grid; grid-template-columns: 38px 1fr; gap: 9px; }
+    .transcript-line time { color: var(--muted); font-size: 10px; padding-top: 3px; }
+    .transcript-line p { font-size: 12px; line-height: 1.7; }
+    .transcript-line.selected { background: #2e3822; }
+    mark { background: var(--accent); color: var(--accent-ink); padding: 1px 2px; }
+    .timeline { padding: 21px 28px 30px; }
+    .timeline-title { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 22px; gap: 16px; }
+    .timeline-title h2 { font-size: 15px; }
+    .ruler { display: flex; justify-content: space-between; padding: 0 0 12px 100px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+    .track { display: grid; grid-template-columns: 86px minmax(0, 1fr); align-items: center; gap: 14px; margin: 8px 0; }
+    .track-label { color: var(--muted); font-size: 11px; }
+    .clip { display: flex; align-items: center; min-height: 52px; background: #354627; border: 1px solid #8da365; border-radius: 4px; padding: 10px 15px; color: var(--accent); font-size: 12px; position: relative; }
+    .clip::before { content: ""; position: absolute; top: -30px; bottom: -52px; left: 37%; width: 2px; background: var(--accent); }
+    .audio { min-height: 32px; background: var(--panel-raised); border: 1px solid var(--line); border-radius: 4px; padding: 5px 15px; font-size: 11px; color: var(--muted); }
+    .bottom-note { margin-top: 21px; color: var(--muted); font-size: 11px; }
+    .states { padding: 0 28px 30px; }
+    summary { cursor: pointer; color: var(--muted); min-height: 44px; display: flex; align-items: center; border-top: 1px solid var(--line); }
+    summary::before { content: "+"; font-size: 20px; margin-right: 12px; }
+    details[open] summary::before { content: "−"; }
+    .state-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 20px; padding: 18px 0; }
+    .state-grid h3 { font-size: 12px; margin: 0 0 8px; }
+    .state-grid p { font-size: 11px; color: var(--muted); }
+    .state-grid .error h3 { color: var(--error); }
+    progress { width: 100%; height: 5px; accent-color: var(--accent); margin: 10px 0; }
+    @media (max-width: 1170px) { .workspace { grid-template-columns: 175px minmax(260px,1fr); } .workspace .transcript { grid-column: 1/-1; } .transcript-lines { display: grid; grid-template-columns: 1fr 1fr; } .preview { min-height: 275px; } }
+    @media (max-width: 720px) { .shell { display: block; } .rail { flex-direction: row; border-right: 0; border-bottom: 1px solid var(--line); padding: 8px 16px; } .brand { margin: 0 10px 0 0; flex: 0 0 30px; width: 30px; height: 30px; } .rail a { width: auto; padding: 0 12px; } .rail .local { margin: 0 0 0 auto; } .topbar { padding: 14px 18px; } .wordmark { font-size: 19px; margin-right: 12px; } .crumb { font-size: 11px; } .project-heading { padding: 21px 18px; display: block; } .project-heading > p { margin-top: 10px; } .workspace { display: flex; flex-direction: column; } .workspace .media { order: 2; } .workspace .transcript { order: 3; } .library { display: grid; grid-template-columns: 100px 1fr; gap: 0 14px; align-items: center; } .media-thumb { grid-row: span 2; } .library .import { grid-column: 1/-1; margin-top: 16px; } .preview-wrap { padding: 18px; } .preview { min-height: 230px; } .transcript-lines { display: block; } .timeline { padding: 23px 18px; } .ruler { padding-left: 60px; } .track { grid-template-columns: 48px minmax(0,1fr); gap: 12px; } .clip { font-size: 10px; } .states { padding: 0 18px 24px; } .state-grid { grid-template-columns: 1fr 1fr; } .concept-note { font-size: 11px; padding: 8px 18px; } }
+  </style>
+</head>
+<body>
+  <div class="concept-note"><strong>Static design concept.</strong> Sample media and transcript. Editing controls are disabled in this preview.</div>
+  <div class="shell">
+    <nav class="rail" aria-label="Concept sections">
+      <div class="brand" aria-label="CUTROOM">C</div>
+      <a class="active" href="#editor">Editor</a>
+      <a href="#media">Media</a>
+      <a href="#states">States</a>
+      <div class="local">Local<br>workspace</div>
+    </nav>
+    <main id="editor">
+      <header class="topbar">
+        <div><span class="wordmark">CUTROOM</span><span class="crumb">Projects / Sample interview</span></div>
+        <button class="export" disabled>Export clip · preview</button>
+      </header>
+      <div class="project-heading">
+        <div><h1>A good story starts with a cut.</h1><p class="muted">Sample interview · Clip 01 · Portrait cut</p></div>
+        <p class="muted">Sample project</p>
+      </div>
+      <div class="workspace">
+        <section class="media" id="media" aria-labelledby="media-title">
+          <div class="section-bar"><h2 id="media-title">Project media</h2><span class="count">1 sample</span></div>
+          <div class="library">
+            <div class="media-thumb">Sample video placeholder</div>
+            <p class="filename">interview-sample.mp4</p>
+            <div class="media-details"><span>04:32</span><span>·</span><span>1920 × 1080</span></div>
+            <button class="import" disabled>Import video · preview</button>
+          </div>
+        </section>
+        <section aria-label="Video preview">
+          <div class="section-bar"><h2>Preview</h2><span class="count">Fit · 16:9 source</span></div>
+          <div class="preview-wrap">
+            <div class="preview">
+              <div class="preview-top"><span>Sample media</span><span>Caption safe area</span></div>
+              <div class="placeholder"><strong>Your footage belongs here.</strong><span>Labeled placeholder for the video canvas</span></div>
+              <div class="caption">Start with the part worth sharing.</div>
+            </div>
+            <div class="transport"><span class="timecode">00:12.400</span><button class="play" disabled>Play</button><span class="timecode">00:32.000</span></div>
+          </div>
+        </section>
+        <section class="transcript" aria-labelledby="transcript-title">
+          <div class="section-bar"><h2 id="transcript-title">Transcript</h2><span class="count">Sample text</span></div>
+          <div class="transcript-head">Example transcript selection</div>
+          <div class="transcript-lines">
+            <div class="transcript-line"><time>00:00</time><p>The full interview gives us context. A short clip needs a clear place to begin.</p></div>
+            <div class="transcript-line selected"><time>00:12</time><p><mark>Start with the part worth sharing.</mark> One idea, told well, gives people a reason to keep watching.</p></div>
+            <div class="transcript-line"><time>00:24</time><p>Keep the sentence that makes your point. Leave enough space for the idea to land.</p></div>
+            <div class="transcript-line"><time>00:38</time><p>Then review the cut with the sound on, and once more with captions only.</p></div>
+          </div>
+        </section>
+      </div>
+      <section class="timeline" aria-labelledby="timeline-title">
+        <div class="timeline-title"><h2 id="timeline-title">Clip timeline</h2><span class="muted">Sample selection · 00:12 to 00:44</span></div>
+        <div class="ruler" aria-hidden="true"><span>00:00</span><span>00:08</span><span>00:16</span><span>00:24</span><span>00:32</span></div>
+        <div class="track"><span class="track-label">Video</span><div class="clip">01 · Start with the part worth sharing</div></div>
+        <div class="track"><span class="track-label">Captions</span><div class="audio">Sample caption track · 4 segments</div></div>
+        <p class="bottom-note">Select a transcript passage, adjust the cut, then review before exporting. This view illustrates the intended workflow.</p>
+      </section>
+      <details class="states" id="states">
+        <summary>View proposed workspace states</summary>
+        <div class="state-grid">
+          <section><h3>Ready for your first video</h3><p>Import a local video to start a project. Your original file stays unchanged.</p></section>
+          <section><h3>Transcribing video</h3><p>Example processing state. Keep the app open while transcription runs.</p><progress value="38" max="100" aria-label="Example transcription progress">38%</progress></section>
+          <section class="error"><h3>Transcription stopped</h3><p>Your video is still available. Check the local model setup and try transcription again.</p></section>
+          <section><h3>Clip exported</h3><p>Example success state. Show the local output path and an action to open the exported video.</p></section>
+        </div>
+      </details>
+    </main>
+  </div>
+</body>
+</html>
