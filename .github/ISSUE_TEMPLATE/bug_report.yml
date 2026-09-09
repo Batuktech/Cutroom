@@ -1,0 +1,32 @@
+name: Bug report
+description: Report a reproducible problem in the local editor.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: "For vulnerabilities, use the private security report linked in SECURITY.md. Do not attach private footage, transcripts, or .env files."
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Commit/version, OS, Node, Python, FFmpeg, and model/GPU if relevant. Redact personal paths from doctor output.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Prefer the bundled sample or a small synthetic recording.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Redacted logs or screenshots
+      description: Include relevant errors and commands tried. Avoid full library backups.

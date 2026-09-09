@@ -1,0 +1,22 @@
+name: Feature request
+description: Propose an improvement to a local editing workflow.
+title: "[Feature]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What editing problem does this solve?
+      description: Describe the task and your current workaround.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Proposed behavior
+      description: Explain a concrete workflow, including resource or privacy requirements.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
