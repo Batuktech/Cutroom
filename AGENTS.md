@@ -20,7 +20,7 @@ Inspect `git status`, relevant source, package scripts, and tests. Preserve unre
 
 Do not read or modify a user's media library unless the task explicitly needs it. `.cutroom/`, `.env`, `.venv*/`, `output/`, browser traces, model weights, and private media stay untracked. Tests use isolated directories under `output/`; never seed or delete real user projects.
 
-Keep the API bound to loopback. Preserve input validation, Host/Origin checks, cancellation, registered-file access, and subprocess argument arrays. Do not add cloud inference, telemetry, browser-cookie extraction, public hosting, or automatic publishing without explicit product scope.
+Keep the API bound to loopback. Preserve input validation, Host/Origin checks, cancellation, registered-file access, and subprocess argument arrays. Optional cloud transcript review is supported only through explicit per-run consent and server-only BYOK credentials; see [BYOK](docs/byok.md). Preserve local defaults, fixed provider endpoints, request caps, redacted errors, and credential exclusion from metadata. Do not add new cloud data sharing, telemetry, browser-cookie extraction, public hosting, or automatic publishing without explicit product scope.
 
 Do not automatically download models, run GPU tests, install system packages, stop an active user job, or change drivers. Check the relevant test prerequisites first. Do not push, publish, delete user data, or rewrite shared Git history without task authorization.
 

@@ -10,6 +10,7 @@ flowchart LR
   Queue --> FFmpeg[FFmpeg / FFprobe]
   Queue --> Python[Local Python worker]
   Queue --> Qwen[Qwen3-8B Vulkan worker]
+  Queue --> Cloud[Optional cloud transcript API]
   Python --> Whisper[Whisper CPU int8]
   Python --> Faces[OpenCV face detector]
   Store --> Files[Local data directory]
@@ -69,7 +70,7 @@ To move the studio, stop it and copy the entire data directory. To recover remov
 
 ## Qwen review persistence
 
-`POST /api/projects/:id/suggestions/analyze` queues a deduplicated `suggest` job using the installed local GGUF model. The two-hour worker runs within the shared processing queue and unloads after use. Temporary transcript/result files are removed after success, failure, or cancellation. No inference requests leave this computer.
+`POST /api/projects/:id/suggestions/analyze` queues a deduplicated `suggest` job using the installed local GGUF model. The two-hour worker runs within the shared processing queue and unloads after use. Temporary transcript/result files are removed after success, failure, or cancellation. Local Qwen inference stays on this computer. An explicitly selected cloud provider uses the same saving and acceptance path; see [BYOK](byok.md).
 
 The optional `Project.suggestions` contains a review ID, source fingerprint, timestamp, settings, section/review counts, a requested candidate count, and up to thirty candidates. `POST /api/projects/:id/suggestions/accept` validates the review ID, source fingerprint, and selected IDs transactionally before adding default 16:9 clips with Highlight captions. It is idempotent for already-saved time ranges. Concurrent transcript changes reject analysis application and acceptance with an explanatory message; a cancelled worker cannot save a review while waiting for a store transaction. Backups validate and preserve review metadata. The legacy `/suggestions` endpoint remains the fast-rule method.
 
@@ -82,3 +83,11 @@ Worker checkpoint events feed a serialized promise chain of transactional review
 YouTube import accepts an optional numeric source range, optional part interval, and 720/1080 quality. Shared range planning validates the complete batch before enqueueing up to 24 independent jobs. Dedupe keys include canonical URL, range, and quality. The Python worker permits long finished replays only when a bounded section is selected, applies FFmpeg section seeking/re-encoding and a file-size cap, and checks measured output duration before import. User input never becomes a shell command. Each downloaded part has a separate project and cancellation entry.
 
 Optional `captionMode` and `captionDuration` preserve compatibility with older clips. API defaults and shared edit comparison normalize old settings without falsely marking unchanged exports dirty. Preview, ASS output, and SRT grouping use the same word/phrase cues. The pop scale phase is based on the original cue start and retained when a clip trims into a cue. Build-up exports discrete word-reveal events. See [workflow and verification](long-streams-and-captions.md).
+
+## Cloud review and credentials
+
+`GET /api/ai/providers` returns only provider IDs, configured booleans, and key sources. `PUT /api/ai/providers/:provider` accepts `{ "apiKey": "..." }` for a server-memory session; `DELETE` forgets that session key. Environment keys are read on the server and remain available after deleting an override. No key is stored in project options or review results.
+
+The analyze route accepts `provider` (default `local`), `model`, and `maxRequests` (1–100, default 20). A non-local provider requires `cloudConsent: true`, an available key, and a model ID. Consent is validated at the request boundary and not persisted as a reusable permission. `server/ai-providers.ts` sends structured-output requests to fixed HTTPS endpoints, rejects redirects, caps responses at 1 MB, bounds timeouts, and sanitizes errors. `server/cloud-suggestions.ts` scans overlapping sections and performs optional second reviews with a shared request budget. Model usage and partial status are saved alongside review metadata.
+
+Job cancellation aborts HTTP requests as well as local subprocesses. Completed request usage is informative, not an invoice. No provider credentials, response error bodies, or request headers enter history. The browser never calls a provider directly. The local server remains a single-user trust boundary, not a shared service with credential isolation.

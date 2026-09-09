@@ -34,3 +34,7 @@ Every integration suite uses a separate `output/` directory and stops its own te
 Use the original synthetic demo, desktop and 320/390px views, keyboard focus, loading/error/empty states, and reduced motion. For captions, inspect both preview and rendered output at the same source time. Automated accessibility scans complement manual checks; they do not establish complete accessibility compliance.
 
 See [verification](verification.md) for release checks and their limits. Do not infer general transcription accuracy or viral potential from a passing integration test.
+
+## BYOK cloud review
+
+`npm run test:byok` starts an isolated server on port 4331 using synthetic demo media and a provider fixture that blocks all real network requests. It needs FFmpeg, but no cloud account, Python model, or GPU. It checks all three adapters through the real API/queue/store, consent, validation, cancellation, concurrent transcript edits, and credential redaction/restart. `npm test` also covers transport errors, budget limits, section coverage, and strict review filtering. Live provider calls are not part of automated tests and can incur charges.

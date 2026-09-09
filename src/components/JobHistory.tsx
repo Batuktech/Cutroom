@@ -8,7 +8,7 @@ const labels: Record<Job["kind"], string> = {
   reframe: "Face framing",
   model: "Model installation",
   preview: "Browser preview",
-  suggest: "Qwen clip analysis",
+  suggest: "AI clip analysis",
 };
 export function JobHistory({ jobs }: { jobs: Job[] }) {
   const finished = jobs

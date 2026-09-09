@@ -1,6 +1,6 @@
 # Optional Qwen3-8B setup
 
-The clip analyzer uses Qwen3-8B Q4_K_M GGUF through llama-cpp-python. This is separate from Whisper. Model weights are not included in Git and there is no paid inference API.
+The clip analyzer uses Qwen3-8B Q4_K_M GGUF through llama-cpp-python. This is separate from Whisper. Model weights are not included in Git and this local mode needs no paid inference API. Optional [cloud BYOK](byok.md) is available separately.
 
 The current worker is specific to **Linux with NVIDIA monitoring and Vulkan acceleration**. It reads `/proc/meminfo`, calls `nvidia-smi`, and uses a fixed 24-layer GPU preset. AMD, Apple Silicon, Windows, multi-GPU selection, and CPU-only Qwen are not supported by this integration as shipped.
 
@@ -35,6 +35,6 @@ Inspect `vulkaninfo --summary` and `nvidia-smi`. Set `CUTROOM_VULKAN_DEVICE` in 
 npm run doctor
 ```
 
-Restart the studio after installing the runtime/model. A missing runtime or model disables Local AI review and keeps fast rules available. Before starting inference, the worker requires approximately 3 GB available system RAM and 3.8 GB free GPU memory. It uses two CPU threads, 2,048 context tokens, lower process priority, and unloads afterward. Repeated low-memory readings stop the job. Other apps can still compete for resources.
+Restart the studio after installing the runtime/model. A missing runtime or model disables local Qwen review and keeps fast rules available. Before starting inference, the worker requires approximately 3 GB available system RAM and 3.8 GB free GPU memory. It uses two CPU threads, 2,048 context tokens, lower process priority, and unloads afterward. Repeated low-memory readings stop the job. Other apps can still compete for resources.
 
 The original working installation was tested on an RTX 3060 Laptop GPU with 6 GB VRAM and about 16 GB RAM. These generic build instructions have not been validated on every distribution or GPU. See [usage](ai-suggestions.md), [testing](testing.md), and [the bounded performance trial](qwen-trial.md).

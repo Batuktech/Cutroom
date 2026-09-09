@@ -11,6 +11,7 @@ const pending: { job: Job; run: (context: JobContext) => Promise<unknown> }[] =
 let busy = false;
 const processes = new Map<string, ChildProcess>();
 const running = new Set<string>();
+const controllers = new Map<string, AbortController>();
 
 export function projectIsProcessing(id: string) {
   return jobs.some((job) => job.projectId === id &&
@@ -64,11 +65,13 @@ export function stopJobs() {
         "Stopped with the local server. Run this action again to resume work.";
       job.finishedAt = new Date().toISOString();
     }
+  for (const controller of controllers.values()) controller.abort();
   for (const child of processes.values()) terminate(child);
   persistHistory();
 }
 export interface JobContext {
   job: Job;
+  signal?: AbortSignal;
   progress: (progress: number, message?: string) => void;
   exec: typeof execute;
 }
@@ -197,8 +200,11 @@ async function drain() {
     running.add(item.job.id);
     item.job.message = "Starting local processor";
     persistHistory();
+    const controller = new AbortController();
+    controllers.set(item.job.id, controller);
     try {
       const result = await item.run({
+        signal: controller.signal,
         job: item.job,
         progress: (progress, message) => {
           if (item.job.status === "cancelled") return;
@@ -230,6 +236,7 @@ async function drain() {
     }
     item.job.finishedAt = new Date().toISOString();
     running.delete(item.job.id);
+    controllers.delete(item.job.id);
     persistHistory();
   }
   busy = false;
@@ -241,6 +248,7 @@ export function cancelJob(id: string) {
     job.status = "cancelled";
     job.message = "Cancelled";
     job.finishedAt = new Date().toISOString();
+    controllers.get(id)?.abort();
     const child = processes.get(id);
     if (child) terminate(child);
     persistHistory();

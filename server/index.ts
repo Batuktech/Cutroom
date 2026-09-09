@@ -10,6 +10,8 @@ import { importYoutube } from "./youtube.js";
 import { youtubeUrl } from "../shared/youtube.js";
 import { youtubeParts, sourceTime } from "../shared/youtube-range.js";
 import { deleteProject } from "./delete-project.js";
+import { aiCredentials, cloudProviderSchema } from "./ai-credentials.js";
+import { providerDetails } from "../shared/ai-providers.js";
 import { suggestionOptionsSchema } from "../shared/suggestions.js";
 import { analyzeSuggestions, acceptSuggestions, qwenReadiness } from "./suggestions.js";
 import { latestExports } from "../shared/exports.js";
@@ -87,6 +89,13 @@ app.use((req, res, next) => {
   next();
 });
 app.use(express.json({ limit: "20mb" }));
+app.get("/api/ai/providers", (_req, res) => res.json(aiCredentials.status()));
+app.put("/api/ai/providers/:provider", (req, res) => {
+  res.json(aiCredentials.set(cloudProviderSchema.parse(req.params.provider), req.body));
+});
+app.delete("/api/ai/providers/:provider", (req, res) => {
+  res.json(aiCredentials.forget(cloudProviderSchema.parse(req.params.provider)));
+});
 const upload = multer({
   storage: multer.diskStorage({
     destination: MEDIA,
@@ -352,7 +361,16 @@ app.post("/api/projects/:id/suggestions/analyze", (req, res) => {
   const options = suggestionOptionsSchema.parse(req.body);
   const p = getProject(req.params.id);
   if (!p.transcript.length) { res.status(400).json({ error: "Transcribe the video or import subtitles first." }); return; }
-  if (!ready.qwen.ready) { res.status(409).json({ error: ready.qwen.message }); return; }
+  if (options.provider === "local") {
+    if (!ready.qwen.ready) { res.status(409).json({ error: ready.qwen.message }); return; }
+  } else {
+    if (req.body.cloudConsent !== true) {
+      res.status(400).json({ error: "Confirm sharing transcript text, timestamps, and editorial guidance with the selected provider for this analysis." }); return;
+    }
+    options.model ||= providerDetails[options.provider].model;
+    if (!options.model) { res.status(400).json({ error: "Enter a structured-output model ID for this provider." }); return; }
+    aiCredentials.get(options.provider);
+  }
   res.status(202).json(enqueue("suggest", p.id, (context) => analyzeSuggestions(p.id, options, context)));
 });
 app.post("/api/projects/:id/suggestions/accept", async (req, res) => {
@@ -652,6 +670,9 @@ app.use(
     _next: express.NextFunction,
   ) => {
     if (res.headersSent) return;
+    if ((error as { type?: string })?.type === "entity.parse.failed") {
+      res.status(400).json({ error: "The request body must be valid JSON." }); return;
+    }
     if (error instanceof z.ZodError) {
       res
         .status(400)

@@ -1,3 +1,4 @@
+import type { AIProvider } from "./ai-providers.js";
 export const suggestionInterests = [
   { id: "interesting", label: "Interesting conversations" },
   { id: "funny", label: "Humor & banter" },
@@ -11,6 +12,9 @@ export const suggestionInterests = [
 ] as const;
 export type SuggestionInterest = typeof suggestionInterests[number]["id"];
 export interface SuggestionOptions {
+  provider?: AIProvider;
+  model?: string;
+  maxRequests?: number;
   maxDuration: number;
   minDuration: number;
   maxPause: number;
@@ -20,6 +24,7 @@ export interface SuggestionOptions {
   count: number;
 }
 export const defaultSuggestionOptions: SuggestionOptions = {
+  provider: "local", model: "", maxRequests: 20,
   maxDuration: 60, minDuration: 5, maxPause: 15,
   interests: ["interesting", "funny", "story", "reactions"], guidance: "",
   strictness: "discovery", count: 25,

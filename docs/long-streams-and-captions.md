@@ -17,7 +17,7 @@ The worker uses yt-dlp's FFmpeg-backed time-range downloads and re-encodes the s
 
 ## Review 20–30 possible clips
 
-**Suggest cuts → Local AI review → Candidates to review** defaults to **up to 25**. Options include 5, 10, 20, 25, and 30. **Maximum clip length** offers 20–100 seconds in ten-second increments. Shorter clips qualify: selecting 100 seconds allows a 20-second passage.
+**Suggest cuts → AI review → Candidates to review** defaults to **up to 25**. Options include 5, 10, 20, 25, and 30. **Maximum clip length** offers 20–100 seconds in ten-second increments. Shorter clips qualify: selecting 100 seconds allows a 20-second passage.
 
 Choose multiple interests together, with any matching interest eligible. Discovery saves first-pass findings as sections finish; Reviewed adds another assessment while retaining uncertain passages; Strict requires all second-pass checks. Minimum duration, allowed pauses, and custom guidance offer additional control. Stop analysis to keep and select findings before the entire scan completes. The count remains an upper bound; the model can return fewer candidates. See [current AI controls and selection behavior](ai-suggestions.md).
 

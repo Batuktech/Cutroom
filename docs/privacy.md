@@ -1,8 +1,10 @@
 # Privacy and local files
 
-Cutroom has no accounts, analytics, cloud media storage, remote inference endpoint, or automatic social publishing. Fonts and the sample video are bundled locally. The source repository contains no user library or model weights.
+Cutroom has no accounts, analytics, cloud media storage, or automatic social publishing. Fonts and the sample video are bundled locally. The source repository contains no user library or model weights.
 
-Network operations are explicit: dependency installation, speech/Qwen model downloads, and YouTube URL import. Once installed, Whisper and Qwen read local model files; rendering uses local FFmpeg. YouTube import does not read browser cookies or sign in to an account.
+Network operations are explicit: dependency installation, speech/Qwen model downloads, YouTube URL import, and optional [cloud transcript review](byok.md) after explicit confirmation. Once installed, Whisper and Qwen read local model files; rendering uses local FFmpeg. YouTube import does not read browser cookies or sign in to an account.
+
+Cloud review sends transcript text, timestamps, interests, and guidance to the selected provider (and OpenRouter's upstream model provider when applicable). Audio and video remain local. Provider data policies apply. UI-entered API keys stay in server memory and are excluded from metadata backups. Optional `.env` keys persist as plaintext outside the data folder; keep that file private. Chat subscriptions do not substitute for API keys.
 
 ## Storage
 

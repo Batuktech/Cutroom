@@ -1,6 +1,9 @@
 import { z } from "zod";
 const interestSchema = z.enum(["interesting", "funny", "educational", "story", "surprising", "debate", "emotional", "reactions", "quotes"]);
 export const suggestionOptionsSchema = z.object({
+  provider: z.enum(["local", "openai", "anthropic", "openrouter"]).default("local"),
+  model: z.string().trim().max(120).regex(/^[a-zA-Z0-9_./:@-]*$/, "Use a model ID from your provider.").default(""),
+  maxRequests: z.number().int().min(1).max(100).default(20),
   maxDuration: z.number().finite().min(20).max(100).default(60),
   minDuration: z.number().finite().min(3).max(20).default(5),
   maxPause: z.number().finite().min(2).max(30).default(15),
@@ -26,6 +29,11 @@ export const suggestionSchema = z.object({
   quote: z.string().trim().min(1).max(300),
   verdict: z.enum(["suggested", "reviewed", "needs-review"]).optional(),
 }).refine((c) => c.end > c.start);
+export const aiUsageSchema = z.object({
+  provider: z.enum(["openai", "anthropic", "openrouter"]), model: z.string().max(120),
+  requests: z.number().int().nonnegative(), inputTokens: z.number().int().nonnegative(),
+  outputTokens: z.number().int().nonnegative(), limitReached: z.boolean(),
+});
 export const suggestionReviewSchema = z.object({
   id: z.string().uuid(),
   sourceHash: z.string().regex(/^[a-f0-9]{64}$/),
@@ -38,6 +46,7 @@ export const suggestionReviewSchema = z.object({
   complete: z.boolean().optional(),
   scanned: z.number().int().nonnegative().optional(),
   diagnostics: suggestionDiagnosticsSchema.optional(),
+  usage: aiUsageSchema.optional(),
   requested: z.number().int().min(1).max(30).optional(),
   candidates: z.array(suggestionSchema).max(30),
 });
