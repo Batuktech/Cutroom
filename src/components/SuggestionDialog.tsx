@@ -47,7 +47,7 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
   const closeDialog = () => { setConsent(false); close(); };
   const providers = useAIProviders(open);
   const providerStatus = providers.statuses.find(s => s.provider === provider);
-  const providerReady = cloud ? !!providerStatus?.configured && !!options.model?.trim() && consent : !!health?.qwen?.ready;
+  const providerReady = cloud ? !!providerStatus?.configured && (provider !== "custom" || !!providerStatus?.endpointReady) && !!options.model?.trim() && consent : !!health?.qwen?.ready;
   const changeOptions = (patch: Partial<SuggestionOptions>) => setOptions(current => ({ ...current, ...patch }));
   const [selected, setSelected] = useState<string[]>([]);
   const [preview, setPreview] = useState<ClipSuggestion | null>(null);
@@ -75,7 +75,7 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
     setPending(true); setError("");
     try {
       if (method === "ai") {
-        await post(`/projects/${project.id}/suggestions/analyze`, { ...options, cloudConsent: cloud && consent });
+        await post(`/projects/${project.id}/suggestions/analyze`, { ...options, cloudConsent: cloud && consent, ...(provider === "custom" ? { cloudDestination: providerStatus?.endpoint } : {}) });
         setConsent(false);
         notify("AI analysis queued. You can keep working while it runs.");
       } else {
@@ -109,7 +109,7 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
       <div className="ai-provider-controls">
         <label className="field-label">Review with<select value={provider} disabled={pending || !!active} onChange={e => {
           const next = e.target.value as AIProvider;
-          changeOptions({ provider: next, model: providerDetails[next].model }); setConsent(false);
+          changeOptions({ provider: next, model: providerDetails[next].model, outputFormat: "auto" }); setConsent(false);
         }}>
           <option value="local">Local Qwen3-8B · no API cost</option>
           {cloudProviders.map(id => <option key={id} value={id}>{providerDetails[id].name} · your API key</option>)}
@@ -117,16 +117,20 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
         {cloud && <>
           <div className="suggestion-controls">
             <label className="field-label">Model ID<input value={options.model ?? ""} disabled={pending || !!active} maxLength={120} autoComplete="off" spellCheck={false}
-              placeholder={provider === "openrouter" ? "provider/model" : providerDetails[provider].model} onChange={e => changeOptions({ model: e.target.value })} /></label>
+              placeholder={providerDetails[provider].model || "Exact model ID from your provider"} onChange={e => changeOptions({ model: e.target.value })} /></label>
             <label className="field-label">Request cap per analysis<select value={options.maxRequests ?? 20} disabled={pending || !!active} onChange={e => changeOptions({ maxRequests: Number(e.target.value) })}>
               {[1, 5, 10, 20, 40, 60, 100].map(n => <option key={n} value={n}>Up to {n} {n === 1 ? "request" : "requests"}</option>)}
             </select></label>
           </div>
-          <p className="suggestion-note">Choose a model that supports structured JSON output. Each request allows up to 4,096 output tokens. This is a request cap, not a money limit; set a spending limit with your provider. Findings are saved as sections finish. Reaching the cap can leave a partial scan.</p>
+          {provider !== "openai" && provider !== "anthropic" && <label className="field-label">Output compatibility<select value={options.outputFormat ?? "auto"} disabled={pending || !!active} onChange={e => changeOptions({ outputFormat: e.target.value as SuggestionOptions["outputFormat"] })}>
+            <option value="auto">Provider default · {providerDetails[provider].format === "json_object" ? "JSON mode" : "JSON schema"}</option>
+            <option value="json_schema">JSON schema</option><option value="json_object">JSON mode</option>
+          </select></label>}
+          <p className="suggestion-note">Choose a model supporting the selected JSON format. JSON mode uses a schema in the prompt; all proposals still pass local validation. Each request allows up to 4,096 output tokens. This is a request cap, not a money limit; set a spending limit with your provider. Findings are saved as sections finish. Reaching the cap can leave a partial scan.</p>
           <ProviderKeyDisclosure key={provider} provider={provider} status={providerStatus} refresh={providers.refresh} />
           {providers.error && <p role="alert" className="error-message">{providers.error} <Button variant="secondary" size="small" onClick={() => void providers.refresh()}>Retry</Button></p>}
           <label className="cloud-consent"><input type="checkbox" checked={consent} disabled={pending || !!active} onChange={e => setConsent(e.target.checked)} />
-            <span>For this analysis, send transcript text, timestamps, interests, and guidance to {providerDetails[provider].name}{provider === "openrouter" ? " and its model provider" : ""}. I understand API usage may cost money. Audio and video stay on this computer.</span>
+            <span>For this analysis, send transcript text, timestamps, interests, and guidance to {providerDetails[provider].name}{provider === "custom" ? ` at ${providerStatus?.endpoint || "the configured endpoint"}` : ""}{provider === "openrouter" ? " and its model provider" : ""}. I understand API usage may cost money. Audio and video stay on this computer.</span>
           </label>
         </>}
       </div>

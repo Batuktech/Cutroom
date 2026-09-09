@@ -1,7 +1,10 @@
 import { z } from "zod";
-import type { CloudProvider } from "../shared/ai-providers.js";
+import { providerDetails, type OutputFormat, type CloudProvider } from "../shared/ai-providers.js";
+
+import { providerEndpoint } from "./ai-endpoints.js";
 
 export interface AIRequest {
+  outputFormat?: "auto" | OutputFormat;
   provider: CloudProvider;
   model: string;
   apiKey: string;
@@ -11,18 +14,15 @@ export interface AIRequest {
   signal?: AbortSignal;
 }
 export interface AIResponse { data: unknown; inputTokens: number; outputTokens: number }
-const endpoints = {
-  openai: "https://api.openai.com/v1/responses",
-  anthropic: "https://api.anthropic.com/v1/messages",
-  openrouter: "https://openrouter.ai/api/v1/chat/completions",
-};
 const tokenCount = z.number().int().nonnegative().catch(0);
 const textBlock = z.object({ type: z.string(), text: z.string().optional() });
 
 export async function requestAI(request: AIRequest): Promise<AIResponse> {
   const { provider, model, apiKey, instruction, input, schema } = request;
+  const endpoint = providerEndpoint(provider);
+  const format = request.outputFormat && request.outputFormat !== "auto" ? request.outputFormat : providerDetails[provider].format;
   const headers: Record<string, string> = { "Content-Type": "application/json" };
-  const messages = [{ role: "system", content: instruction }, { role: "user", content: input }];
+  const messages = [{ role: "system", content: `${instruction}\nReturn only a JSON object matching this JSON schema: ${JSON.stringify(schema)}` }, { role: "user", content: input }];
   let body: unknown;
   if (provider === "openai") {
     headers.Authorization = `Bearer ${apiKey}`;
@@ -35,17 +35,21 @@ export async function requestAI(request: AIRequest): Promise<AIResponse> {
       output_config: { format: { type: "json_schema", schema } } };
   } else {
     headers.Authorization = `Bearer ${apiKey}`;
-    body = { model, messages, max_tokens: 4096, provider: { require_parameters: true },
-      response_format: { type: "json_schema", json_schema: { name: "clip_review", strict: true, schema } } };
+    body = { model, messages, max_tokens: 4096,
+      ...(provider === "openrouter" ? { provider: { require_parameters: true } } : {}),
+      ...(provider === "moonshot" && /^kimi-k3(?:$|-)/.test(model) ? { reasoning_effort: "low" } : {}),
+      ...(provider === "dashscope" ? { enable_thinking: false } : {}),
+      response_format: format === "json_object" ? { type: "json_object" }
+        : { type: "json_schema", json_schema: { name: "clip_review", strict: true, schema } } };
   }
   const signal = AbortSignal.any([...(request.signal ? [request.signal] : []), AbortSignal.timeout(120_000)]);
   try {
-    const response = await fetch(endpoints[provider], { method: "POST", headers, body: JSON.stringify(body), redirect: "error", signal });
+    const response = await fetch(endpoint, { method: "POST", headers, body: JSON.stringify(body), redirect: "error", signal });
     if (!response.ok) {
       await response.body?.cancel();
       const hint = response.status === 401 || response.status === 403 ? "Check your API key and model access."
         : response.status === 429 ? "Check your provider quota, billing, or rate limit."
-        : response.status === 400 || response.status === 404 ? "Check the model ID and its structured-output support."
+        : response.status === 400 || response.status === 404 ? "Check the model ID, regional endpoint, and selected JSON format."
         : "Try again later or choose another model.";
       throw new ProviderError(`The provider returned HTTP ${response.status}. ${hint} Saved findings remain available. No automatic retry was sent.`);
     }

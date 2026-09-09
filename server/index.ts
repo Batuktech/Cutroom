@@ -11,6 +11,7 @@ import { youtubeUrl } from "../shared/youtube.js";
 import { youtubeParts, sourceTime } from "../shared/youtube-range.js";
 import { deleteProject } from "./delete-project.js";
 import { aiCredentials, cloudProviderSchema } from "./ai-credentials.js";
+import { providerEndpoint } from "./ai-endpoints.js";
 import { providerDetails } from "../shared/ai-providers.js";
 import { suggestionOptionsSchema } from "../shared/suggestions.js";
 import { analyzeSuggestions, acceptSuggestions, qwenReadiness } from "./suggestions.js";
@@ -369,6 +370,10 @@ app.post("/api/projects/:id/suggestions/analyze", (req, res) => {
     }
     options.model ||= providerDetails[options.provider].model;
     if (!options.model) { res.status(400).json({ error: "Enter a structured-output model ID for this provider." }); return; }
+    const endpoint = providerEndpoint(options.provider);
+    if (options.provider === "custom" && req.body.cloudDestination !== endpoint) {
+      res.status(400).json({ error: "Confirm the configured custom destination shown in the review dialog." }); return;
+    }
     aiCredentials.get(options.provider);
   }
   res.status(202).json(enqueue("suggest", p.id, (context) => analyzeSuggestions(p.id, options, context)));

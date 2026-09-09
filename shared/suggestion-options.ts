@@ -13,6 +13,7 @@ export const suggestionInterests = [
 export type SuggestionInterest = typeof suggestionInterests[number]["id"];
 export interface SuggestionOptions {
   provider?: AIProvider;
+  outputFormat?: "auto" | "json_schema" | "json_object";
   model?: string;
   maxRequests?: number;
   maxDuration: number;
@@ -24,7 +25,7 @@ export interface SuggestionOptions {
   count: number;
 }
 export const defaultSuggestionOptions: SuggestionOptions = {
-  provider: "local", model: "", maxRequests: 20,
+  outputFormat: "auto", provider: "local", model: "", maxRequests: 20,
   maxDuration: 60, minDuration: 5, maxPause: 15,
   interests: ["interesting", "funny", "story", "reactions"], guidance: "",
   strictness: "discovery", count: 25,

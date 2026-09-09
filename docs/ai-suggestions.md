@@ -2,7 +2,7 @@
 
 Qwen3-8B is integrated into Cutroom's **Suggest cuts** dialog. It is separate from Whisper: Whisper turns audio into timed text; Qwen reads that text to propose passages. The model name is Qwen3-8B (8 billion parameters).
 
-For optional OpenAI, Anthropic, or OpenRouter API models, see [cloud BYOK](byok.md). The selection and preview controls below apply to both; runtime and worker details refer to local Qwen.
+For optional cloud API models, including GLM, Kimi, OpenAI, Anthropic, and Gemini, see [cloud BYOK](byok.md). The selection and preview controls below apply to both; runtime and worker details refer to local Qwen.
 
 ## Use it
 

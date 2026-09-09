@@ -655,3 +655,5 @@
 .cloud-consent input { flex: 0 0 auto; margin-top: 5px; }
 .cloud-ai-settings > .field-label { max-width: 420px; }
 .ai-provider-controls input:not([type="checkbox"]), .provider-key-form input { min-width: 0; width: 100%; }
+
+.provider-endpoint, .cloud-consent span { overflow-wrap: anywhere; }

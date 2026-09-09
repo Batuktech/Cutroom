@@ -56,7 +56,7 @@ Follow [Qwen setup](docs/qwen-setup.md), then **Suggest cuts → AI review → L
 
 ### Use your own cloud AI key instead
 
-Choose OpenAI, Anthropic, or OpenRouter in **Studio settings → Cloud AI**. Then select the provider and model in **Suggest cuts → AI review**, set a request cap, and confirm sharing transcript text. No local Qwen model or GPU is required. API usage may cost money; ChatGPT/Claude subscriptions are separate from API billing. UI-entered keys remain in server memory until restart. [Setup, privacy, billing, and limits](docs/byok.md).
+Choose from 16 providers—including OpenAI, Anthropic, GLM/Z.ai, Kimi/Moonshot, Gemini, DeepSeek, and OpenRouter—or a custom OpenAI-compatible service in **Studio settings → Cloud AI**. Then select the provider and model in **Suggest cuts → AI review**, set a request cap, and confirm sharing transcript text. No local Qwen model or GPU is required. API usage may cost money; ChatGPT/Claude subscriptions are separate from API billing. UI-entered keys remain in server memory until restart. [Setup, privacy, billing, and limits](docs/byok.md).
 
 ## A typical edit
 

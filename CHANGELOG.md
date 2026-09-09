@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- Optional OpenAI, Anthropic, and OpenRouter API keys for clip suggestions, with local Qwen remaining the default.
+- Optional API keys for 16 providers (including GLM, Kimi, Gemini, DeepSeek, OpenAI, Anthropic, and OpenRouter) plus custom OpenAI-compatible endpoints for clip suggestions, with local Qwen remaining the default.
+- Provider-specific JSON modes, explicit format selection, visible destinations, and environment-key names.
 - Per-analysis transcript-sharing confirmation, editable model IDs, request caps, partial results, and reported token usage.
 - Session-only key management, optional environment keys, cancellation, and provider-error redaction.
 - Cloud setup/billing documentation and synthetic provider/API tests without paid requests.

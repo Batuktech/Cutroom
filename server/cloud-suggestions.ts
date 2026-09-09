@@ -58,7 +58,7 @@ export async function analyzeCloud(input: {
     signal?.throwIfAborted();
     if (usage.requests >= limit) throw new Error("Request limit reached.");
     usage.requests++;
-    const response = await (input.ask ?? requestAI)({ provider, model, apiKey: input.apiKey, instruction, input: prompt, schema, signal });
+    const response = await (input.ask ?? requestAI)({ provider, model, outputFormat: options.outputFormat, apiKey: input.apiKey, instruction, input: prompt, schema, signal });
     usage.inputTokens += response.inputTokens; usage.outputTokens += response.outputTokens;
     return response.data;
   }

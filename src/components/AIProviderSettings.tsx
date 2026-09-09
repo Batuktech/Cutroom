@@ -23,6 +23,9 @@ export function ProviderKeyForm({ provider, status, refresh }: {
     finally { setBusy(false); }
   }
   return <div className="provider-key-form">
+    <p className="suggestion-note">{providerDetails[provider].note}</p>
+    <p className="suggestion-note provider-endpoint">Destination: {status?.endpoint || providerDetails[provider].endpoint || "Not configured"}</p>
+    {provider === "custom" && !status?.endpointReady && <p role="status" className="error-message">Custom review is unavailable until CUTROOM_CUSTOM_AI_BASE_URL is configured on the server.</p>}
     <p className="suggestion-note" role="status">{status?.configured ? `Key available · ${status.source === "session" ? "server session" : "server environment"}` : "No API key configured"}</p>
     <label className="field-label">{providerDetails[provider].name} API key
       <input type="password" value={key} onChange={e => setKey(e.target.value)} autoComplete="off" autoCorrect="off" spellCheck={false} maxLength={4096} disabled={busy} placeholder={status?.configured ? "Enter a replacement key" : "Paste your API key"} />
@@ -30,9 +33,9 @@ export function ProviderKeyForm({ provider, status, refresh }: {
     <div className="provider-key-actions">
       <Button variant="secondary" size="small" disabled={busy || !key.trim()} onClick={() => void update()}>{busy ? "Saving…" : "Use key for this session"}</Button>
       {status?.source === "session" && <Button variant="ghost" size="small" disabled={busy} onClick={() => void update(true)}>Forget session key</Button>}
-      <a href={providerDetails[provider].keyUrl} target="_blank" rel="noreferrer">Get an API key ↗</a>
+      {providerDetails[provider].keyUrl && <a href={providerDetails[provider].keyUrl} target="_blank" rel="noreferrer">Get an API key ↗</a>}
     </div>
-    <p className="suggestion-note">Keys entered here stay in server memory until Cutroom restarts. They are not saved in your browser, projects, or metadata backups. For persistence, set the provider’s API key in your local .env file.</p>
+    <p className="suggestion-note">Keys entered here stay in server memory until Cutroom restarts. They are not saved in your browser, projects, or metadata backups. For persistence, set <code>{providerDetails[provider].envKey}</code> in your local .env file.</p>
     {message && <p className="suggestion-note" role="status">{message}</p>}
     {error && <p className="error-message" role="alert">{error}</p>}
   </div>;
