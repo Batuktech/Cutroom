@@ -1,0 +1,83 @@
+{
+  "name": "cutroom",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "start": "node --import tsx scripts/start.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "benchmark:ai": ".venv/bin/python scripts/benchmark-ai.py",
+    "setup:ai": "node scripts/setup-ai.mjs",
+    "demo": ".venv/bin/python scripts/create_demo.py",
+    "test": "vitest run",
+    "test:integration": "node scripts/integration.mjs",
+    "test:youtube": "node scripts/youtube-integration.mjs",
+    "test:captions": "node scripts/caption-integration.mjs",
+    "test:qwen": "node scripts/qwen-integration.mjs",
+    "typecheck": "tsc -b",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "test:python": "python3 -m unittest discover -s scripts -p 'test_*.py'",
+    "check:docs": "node scripts/check-docs.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@radix-ui/react-dialog": "^1.1.23",
+    "@radix-ui/react-dropdown-menu": "^2.1.24",
+    "@radix-ui/react-tooltip": "^1.2.16",
+    "archiver": "^8.0.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "express": "^5.2.1",
+    "lucide-react": "^1.42.0",
+    "motion": "^13.2.0",
+    "multer": "^2.3.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "tailwind-merge": "^3.6.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/archiver": "^8.0.0",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.1.0",
+    "oxlint": "^1.79.0",
+    "playwright": "^1.63.0",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.13",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
+  },
+  "description": "Local-first video clipping studio with AI highlight discovery, transcription, captions, and YouTube imports.",
+  "license": "MIT",
+  "author": "Batuk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Batuktech/Cutroom.git"
+  },
+  "homepage": "https://github.com/Batuktech/Cutroom#readme",
+  "bugs": {
+    "url": "https://github.com/Batuktech/Cutroom/issues"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "keywords": [
+    "video-editor",
+    "clips",
+    "whisper",
+    "qwen",
+    "local-first",
+    "captions"
+  ]
+}
