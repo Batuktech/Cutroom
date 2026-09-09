@@ -1,0 +1,702 @@
+[
+  {
+    "id": "5fbd3cc6-0bf2-4806-abe4-9f7f4f00e7a2",
+    "start": 0,
+    "end": 5.06,
+    "text": "Here is a simple way to make a better short video, start with one useful idea, not five",
+    "words": [
+      {
+        "start": 0,
+        "end": 0.42,
+        "word": " Here"
+      },
+      {
+        "start": 0.42,
+        "end": 0.6,
+        "word": " is"
+      },
+      {
+        "start": 0.6,
+        "end": 0.74,
+        "word": " a"
+      },
+      {
+        "start": 0.74,
+        "end": 0.94,
+        "word": " simple"
+      },
+      {
+        "start": 0.94,
+        "end": 1.2,
+        "word": " way"
+      },
+      {
+        "start": 1.2,
+        "end": 1.36,
+        "word": " to"
+      },
+      {
+        "start": 1.36,
+        "end": 1.54,
+        "word": " make"
+      },
+      {
+        "start": 1.54,
+        "end": 1.68,
+        "word": " a"
+      },
+      {
+        "start": 1.68,
+        "end": 1.86,
+        "word": " better"
+      },
+      {
+        "start": 1.86,
+        "end": 2.14,
+        "word": " short"
+      },
+      {
+        "start": 2.14,
+        "end": 2.5,
+        "word": " video,"
+      },
+      {
+        "start": 2.76,
+        "end": 2.98,
+        "word": " start"
+      },
+      {
+        "start": 2.98,
+        "end": 3.2,
+        "word": " with"
+      },
+      {
+        "start": 3.2,
+        "end": 3.4,
+        "word": " one"
+      },
+      {
+        "start": 3.4,
+        "end": 3.84,
+        "word": " useful"
+      },
+      {
+        "start": 3.84,
+        "end": 4.2,
+        "word": " idea,"
+      },
+      {
+        "start": 4.5,
+        "end": 4.68,
+        "word": " not"
+      },
+      {
+        "start": 4.68,
+        "end": 5.06,
+        "word": " five"
+      }
+    ]
+  },
+  {
+    "id": "5a8387c1-e707-4bb2-badd-d9e4741be9ce",
+    "start": 5.06,
+    "end": 7.52,
+    "text": "ideas, just one thing your viewer can use today.",
+    "words": [
+      {
+        "start": 5.06,
+        "end": 5.44,
+        "word": " ideas,"
+      },
+      {
+        "start": 5.66,
+        "end": 5.84,
+        "word": " just"
+      },
+      {
+        "start": 5.84,
+        "end": 6.06,
+        "word": " one"
+      },
+      {
+        "start": 6.06,
+        "end": 6.22,
+        "word": " thing"
+      },
+      {
+        "start": 6.22,
+        "end": 6.4,
+        "word": " your"
+      },
+      {
+        "start": 6.4,
+        "end": 6.68,
+        "word": " viewer"
+      },
+      {
+        "start": 6.68,
+        "end": 6.94,
+        "word": " can"
+      },
+      {
+        "start": 6.94,
+        "end": 7.18,
+        "word": " use"
+      },
+      {
+        "start": 7.18,
+        "end": 7.52,
+        "word": " today."
+      }
+    ]
+  },
+  {
+    "id": "fcba6ec1-6637-43fb-b2a9-0dde4ff75813",
+    "start": 8.66,
+    "end": 13.78,
+    "text": "The first sentence matters, tell people what they will learn, then show them, a clear example",
+    "words": [
+      {
+        "start": 8.66,
+        "end": 8.8,
+        "word": " The"
+      },
+      {
+        "start": 8.8,
+        "end": 9.12,
+        "word": " first"
+      },
+      {
+        "start": 9.12,
+        "end": 9.48,
+        "word": " sentence"
+      },
+      {
+        "start": 9.48,
+        "end": 10.1,
+        "word": " matters,"
+      },
+      {
+        "start": 10.4,
+        "end": 10.52,
+        "word": " tell"
+      },
+      {
+        "start": 10.52,
+        "end": 10.82,
+        "word": " people"
+      },
+      {
+        "start": 10.82,
+        "end": 11.12,
+        "word": " what"
+      },
+      {
+        "start": 11.12,
+        "end": 11.32,
+        "word": " they"
+      },
+      {
+        "start": 11.32,
+        "end": 11.54,
+        "word": " will"
+      },
+      {
+        "start": 11.54,
+        "end": 11.96,
+        "word": " learn,"
+      },
+      {
+        "start": 12.12,
+        "end": 12.3,
+        "word": " then"
+      },
+      {
+        "start": 12.3,
+        "end": 12.64,
+        "word": " show"
+      },
+      {
+        "start": 12.64,
+        "end": 12.84,
+        "word": " them,"
+      },
+      {
+        "start": 13.06,
+        "end": 13.18,
+        "word": " a"
+      },
+      {
+        "start": 13.18,
+        "end": 13.32,
+        "word": " clear"
+      },
+      {
+        "start": 13.32,
+        "end": 13.78,
+        "word": " example"
+      }
+    ]
+  },
+  {
+    "id": "003c2bd8-7995-4146-bd6e-ed4198e5fcee",
+    "start": 13.78,
+    "end": 15.58,
+    "text": "is better than a long introduction.",
+    "words": [
+      {
+        "start": 13.78,
+        "end": 14.16,
+        "word": " is"
+      },
+      {
+        "start": 14.16,
+        "end": 14.36,
+        "word": " better"
+      },
+      {
+        "start": 14.36,
+        "end": 14.58,
+        "word": " than"
+      },
+      {
+        "start": 14.58,
+        "end": 14.72,
+        "word": " a"
+      },
+      {
+        "start": 14.72,
+        "end": 14.86,
+        "word": " long"
+      },
+      {
+        "start": 14.86,
+        "end": 15.58,
+        "word": " introduction."
+      }
+    ]
+  },
+  {
+    "id": "9a7a3fc6-bfde-44eb-9807-25757145c0bc",
+    "start": 16.58,
+    "end": 21.34,
+    "text": "Keep the parts that move the story forward, leave a little room to breathe, captions help",
+    "words": [
+      {
+        "start": 16.58,
+        "end": 16.92,
+        "word": " Keep"
+      },
+      {
+        "start": 16.92,
+        "end": 17.12,
+        "word": " the"
+      },
+      {
+        "start": 17.12,
+        "end": 17.38,
+        "word": " parts"
+      },
+      {
+        "start": 17.38,
+        "end": 17.68,
+        "word": " that"
+      },
+      {
+        "start": 17.68,
+        "end": 17.84,
+        "word": " move"
+      },
+      {
+        "start": 17.84,
+        "end": 18.02,
+        "word": " the"
+      },
+      {
+        "start": 18.02,
+        "end": 18.36,
+        "word": " story"
+      },
+      {
+        "start": 18.36,
+        "end": 18.72,
+        "word": " forward,"
+      },
+      {
+        "start": 18.92,
+        "end": 19.12,
+        "word": " leave"
+      },
+      {
+        "start": 19.12,
+        "end": 19.38,
+        "word": " a"
+      },
+      {
+        "start": 19.38,
+        "end": 19.54,
+        "word": " little"
+      },
+      {
+        "start": 19.54,
+        "end": 19.94,
+        "word": " room"
+      },
+      {
+        "start": 19.94,
+        "end": 20.12,
+        "word": " to"
+      },
+      {
+        "start": 20.12,
+        "end": 20.38,
+        "word": " breathe,"
+      },
+      {
+        "start": 20.6,
+        "end": 20.88,
+        "word": " captions"
+      },
+      {
+        "start": 20.88,
+        "end": 21.34,
+        "word": " help"
+      }
+    ]
+  },
+  {
+    "id": "50e7f901-01c0-4155-ad7c-7fa47248014f",
+    "start": 21.34,
+    "end": 23.68,
+    "text": "people follow along when the sound is off.",
+    "words": [
+      {
+        "start": 21.34,
+        "end": 21.72,
+        "word": " people"
+      },
+      {
+        "start": 21.72,
+        "end": 22.08,
+        "word": " follow"
+      },
+      {
+        "start": 22.08,
+        "end": 22.58,
+        "word": " along"
+      },
+      {
+        "start": 22.58,
+        "end": 22.78,
+        "word": " when"
+      },
+      {
+        "start": 22.78,
+        "end": 22.94,
+        "word": " the"
+      },
+      {
+        "start": 22.94,
+        "end": 23.18,
+        "word": " sound"
+      },
+      {
+        "start": 23.18,
+        "end": 23.36,
+        "word": " is"
+      },
+      {
+        "start": 23.36,
+        "end": 23.68,
+        "word": " off."
+      }
+    ]
+  },
+  {
+    "id": "f9163705-e153-47dd-bb86-20ab8848813f",
+    "start": 24.57,
+    "end": 29.23,
+    "text": "Before you export, watch it once on a small screen, can you read the words, is the",
+    "words": [
+      {
+        "start": 24.57,
+        "end": 24.87,
+        "word": " Before"
+      },
+      {
+        "start": 24.87,
+        "end": 25.07,
+        "word": " you"
+      },
+      {
+        "start": 25.07,
+        "end": 25.53,
+        "word": " export,"
+      },
+      {
+        "start": 25.89,
+        "end": 26.05,
+        "word": " watch"
+      },
+      {
+        "start": 26.05,
+        "end": 26.21,
+        "word": " it"
+      },
+      {
+        "start": 26.21,
+        "end": 26.45,
+        "word": " once"
+      },
+      {
+        "start": 26.45,
+        "end": 26.75,
+        "word": " on"
+      },
+      {
+        "start": 26.75,
+        "end": 26.87,
+        "word": " a"
+      },
+      {
+        "start": 26.87,
+        "end": 27.11,
+        "word": " small"
+      },
+      {
+        "start": 27.11,
+        "end": 27.53,
+        "word": " screen,"
+      },
+      {
+        "start": 27.75,
+        "end": 27.89,
+        "word": " can"
+      },
+      {
+        "start": 27.89,
+        "end": 28.07,
+        "word": " you"
+      },
+      {
+        "start": 28.07,
+        "end": 28.31,
+        "word": " read"
+      },
+      {
+        "start": 28.31,
+        "end": 28.49,
+        "word": " the"
+      },
+      {
+        "start": 28.49,
+        "end": 28.75,
+        "word": " words,"
+      },
+      {
+        "start": 28.95,
+        "end": 29.09,
+        "word": " is"
+      },
+      {
+        "start": 29.09,
+        "end": 29.23,
+        "word": " the"
+      }
+    ]
+  },
+  {
+    "id": "f59b11ea-d9f4-4eed-b6cd-abb33696192e",
+    "start": 29.23,
+    "end": 32.33,
+    "text": "subject in frame does the ending give people a next step.",
+    "words": [
+      {
+        "start": 29.23,
+        "end": 29.65,
+        "word": " subject"
+      },
+      {
+        "start": 29.65,
+        "end": 29.87,
+        "word": " in"
+      },
+      {
+        "start": 29.87,
+        "end": 30.19,
+        "word": " frame"
+      },
+      {
+        "start": 30.19,
+        "end": 30.47,
+        "word": " does"
+      },
+      {
+        "start": 30.47,
+        "end": 30.63,
+        "word": " the"
+      },
+      {
+        "start": 30.63,
+        "end": 30.83,
+        "word": " ending"
+      },
+      {
+        "start": 30.83,
+        "end": 31.13,
+        "word": " give"
+      },
+      {
+        "start": 31.13,
+        "end": 31.45,
+        "word": " people"
+      },
+      {
+        "start": 31.45,
+        "end": 31.61,
+        "word": " a"
+      },
+      {
+        "start": 31.61,
+        "end": 31.93,
+        "word": " next"
+      },
+      {
+        "start": 31.93,
+        "end": 32.33,
+        "word": " step."
+      }
+    ]
+  },
+  {
+    "id": "c2ed691f-6428-4d6a-9fae-08bb8fb4d22d",
+    "start": 33.01,
+    "end": 38.45,
+    "text": "You do not need a perfect setup to make something useful, record an idea, make a thoughtful",
+    "words": [
+      {
+        "start": 33.01,
+        "end": 33.49,
+        "word": " You"
+      },
+      {
+        "start": 33.49,
+        "end": 33.61,
+        "word": " do"
+      },
+      {
+        "start": 33.61,
+        "end": 33.79,
+        "word": " not"
+      },
+      {
+        "start": 33.79,
+        "end": 34.01,
+        "word": " need"
+      },
+      {
+        "start": 34.01,
+        "end": 34.17,
+        "word": " a"
+      },
+      {
+        "start": 34.17,
+        "end": 34.47,
+        "word": " perfect"
+      },
+      {
+        "start": 34.47,
+        "end": 34.85,
+        "word": " setup"
+      },
+      {
+        "start": 34.85,
+        "end": 35.13,
+        "word": " to"
+      },
+      {
+        "start": 35.13,
+        "end": 35.37,
+        "word": " make"
+      },
+      {
+        "start": 35.37,
+        "end": 35.81,
+        "word": " something"
+      },
+      {
+        "start": 35.81,
+        "end": 36.43,
+        "word": " useful,"
+      },
+      {
+        "start": 36.65,
+        "end": 36.99,
+        "word": " record"
+      },
+      {
+        "start": 36.99,
+        "end": 37.27,
+        "word": " an"
+      },
+      {
+        "start": 37.27,
+        "end": 37.59,
+        "word": " idea,"
+      },
+      {
+        "start": 37.81,
+        "end": 38.01,
+        "word": " make"
+      },
+      {
+        "start": 38.01,
+        "end": 38.21,
+        "word": " a"
+      },
+      {
+        "start": 38.21,
+        "end": 38.45,
+        "word": " thoughtful"
+      }
+    ]
+  },
+  {
+    "id": "21f6f0eb-6489-4f07-95db-a4b9c9ab630e",
+    "start": 38.45,
+    "end": 40.17,
+    "text": "cut and share what you know.",
+    "words": [
+      {
+        "start": 38.45,
+        "end": 38.97,
+        "word": " cut"
+      },
+      {
+        "start": 38.97,
+        "end": 39.25,
+        "word": " and"
+      },
+      {
+        "start": 39.25,
+        "end": 39.53,
+        "word": " share"
+      },
+      {
+        "start": 39.53,
+        "end": 39.71,
+        "word": " what"
+      },
+      {
+        "start": 39.71,
+        "end": 39.91,
+        "word": " you"
+      },
+      {
+        "start": 39.91,
+        "end": 40.17,
+        "word": " know."
+      }
+    ]
+  }
+]
