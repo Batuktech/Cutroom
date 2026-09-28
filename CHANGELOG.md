@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Optional API keys for 16 providers (including GLM, Kimi, Gemini, DeepSeek, OpenAI, Anthropic, and OpenRouter) plus custom OpenAI-compatible endpoints for clip suggestions, with local Qwen remaining the default.
+- Provider-specific JSON modes, explicit format selection, visible destinations, and environment-key names.
+- Per-analysis transcript-sharing confirmation, editable model IDs, request caps, partial results, and reported token usage.
+- Session-only key management, optional environment keys, cancellation, and provider-error redaction.
+- Cloud setup/billing documentation and synthetic provider/API tests without paid requests.
+
 ## 0.1.0 — initial public source
 
 This is the first public source import of the working local studio. The import commits group existing features by subsystem; they are not a reconstructed development timeline. There is no packaged desktop release yet.

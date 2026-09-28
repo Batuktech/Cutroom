@@ -5,7 +5,10 @@ import { execute, type JobContext } from "./jobs.js";
 import { exists } from "./media.js";
 import { MODELS, TEMP, getProject, updateProject } from "./store.js";
 import { transcriptHash, recognitionResultSchema, validateSuggestions } from "./suggestion-domain.js";
+import { suggestionOptionsSchema } from "../shared/suggestions.js";
 import type { SuggestionOptions } from "../shared/suggestion-options.js";
+import { analyzeCloud } from "./cloud-suggestions.js";
+import { aiCredentials } from "./ai-credentials.js";
 import { clipSchema } from "./domain.js";
 
 const PYTHON = path.resolve(".venv-qwen/bin/python");
@@ -49,12 +52,18 @@ export async function analyzeSuggestions(id: string, options: SuggestionOptions,
         throw new Error("The transcript changed during analysis. Your edits were kept; analyze it again.");
       current.suggestions = {
         id: reviewId, sourceHash, createdAt: new Date().toISOString(),
-        target: options.maxDuration, focus: "interesting", options, requested: options.count,
-        complete: final, candidates, sections: result.sections, scanned: result.scanned,
+        target: options.maxDuration, focus: "interesting", options: suggestionOptionsSchema.parse(options), requested: options.count,
+        complete: result.complete ?? final, usage: result.usage, candidates, sections: result.sections, scanned: result.scanned,
         reviewed: result.reviewed, diagnostics: result.diagnostics,
       };
     });
     if ((context.job.status as string) !== "cancelled") context.job.result = { reviewId, scanned: result.scanned, candidates: candidates.length, partial: !final };
+  }
+  if (options.provider && options.provider !== "local") {
+    const result = await analyzeCloud({ segments: project.transcript, duration: project.duration, options,
+      apiKey: aiCredentials.get(options.provider), signal: context.signal,
+      progress: context.progress, checkpoint: saveResult });
+    return { ...result, candidates: getProject(id).suggestions?.candidates.length ?? 0 };
   }
   try {
     await writeFile(input, JSON.stringify({ segments: project.transcript, ...options }));

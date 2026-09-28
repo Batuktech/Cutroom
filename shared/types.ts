@@ -9,6 +9,7 @@ export interface Segment {
   words?: { start: number; end: number; word: string }[];
 }
 export interface Clip {
+  socialCopy?: import("./publishing.js").SavedSocialCopy;
   id: string;
   title: string;
   start: number;
@@ -41,6 +42,8 @@ export interface ExportFile {
   height?: number;
 }
 export interface Project {
+  publications?: import("./publishing.js").Publication[];
+  stream?: import("./streams.js").ProjectStream;
   suggestions?: import("./suggestions.js").SuggestionReview;
   id: string;
   name: string;
@@ -64,7 +67,7 @@ export interface Project {
   previewFile?: string;
 }
 export type JobKind =
-  "import" | "download" | "transcribe" | "export" | "reframe" | "model" | "preview" | "suggest";
+  "import" | "download" | "transcribe" | "export" | "reframe" | "model" | "preview" | "suggest" | "social-copy" | "publish" | "stream" | "autopost";
 export interface Job {
   id: string;
   label?: string;

@@ -2,7 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { Project, Segment } from "../shared/types.js";
 import type { ClipSuggestion } from "../shared/suggestions.js";
-import { suggestionDiagnosticsSchema } from "../shared/suggestions.js";
+import { suggestionDiagnosticsSchema, aiUsageSchema } from "../shared/suggestions.js";
 import { suggestionBounds } from "../shared/suggestion-bounds.js";
 
 export function transcriptHash(project: Pick<Project, "transcript" | "duration">) {
@@ -21,6 +21,7 @@ export const recognitionResultSchema = z.object({
   candidates: z.array(proposalSchema).max(100),
   complete: z.boolean().optional(), scanned: z.number().int().nonnegative().optional(),
   diagnostics: suggestionDiagnosticsSchema.optional(),
+  usage: aiUsageSchema.optional(),
 });
 const normalize = (value: string) => value.toLocaleLowerCase().replace(/\s+/g, " ").trim();
 

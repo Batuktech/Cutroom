@@ -10,6 +10,7 @@ flowchart LR
   Queue --> FFmpeg[FFmpeg / FFprobe]
   Queue --> Python[Local Python worker]
   Queue --> Qwen[Qwen3-8B Vulkan worker]
+  Queue --> Cloud[Optional cloud transcript API]
   Python --> Whisper[Whisper CPU int8]
   Python --> Faces[OpenCV face detector]
   Store --> Files[Local data directory]
@@ -45,7 +46,7 @@ This is a single-user local application. It has no accounts or tenant system and
 
 FFmpeg and FFprobe receive a `file,pipe` protocol whitelist. A submitted file cannot make these tools fetch a remote media playlist. Uploaded files must pass probing before they reach the Python workers. This boundary is covered by a network-playlist integration fixture.
 
-Fonts are bundled. There is no analytics, cloud media storage, or remote inference. Dependencies are downloaded during installation. Model installation contacts Hugging Face. YouTube URL import is a separate explicit internet operation: a canonical video ID is passed to the project-local yt-dlp worker. User configuration, browser cookies, external plugins, and remote EJS components are not loaded. The existing Node runtime executes the installed EJS package. The Python transcription path requires a completed local model and sets offline mode.
+Fonts are bundled and there is no analytics. Optional cloud transcript review and Postiz publishing are explicit network operations with server-only credentials. Dependencies are downloaded during installation. Model installation contacts Hugging Face. YouTube URL import is a separate explicit internet operation: a canonical video ID is passed to the project-local yt-dlp worker. User configuration, browser cookies, external plugins, and remote EJS components are not loaded. The existing Node runtime executes the installed EJS package. The Python transcription path requires a completed local model and sets offline mode.
 
 ## Persistence and processing
 
@@ -69,7 +70,7 @@ To move the studio, stop it and copy the entire data directory. To recover remov
 
 ## Qwen review persistence
 
-`POST /api/projects/:id/suggestions/analyze` queues a deduplicated `suggest` job using the installed local GGUF model. The two-hour worker runs within the shared processing queue and unloads after use. Temporary transcript/result files are removed after success, failure, or cancellation. No inference requests leave this computer.
+`POST /api/projects/:id/suggestions/analyze` queues a deduplicated `suggest` job using the installed local GGUF model. The two-hour worker runs within the shared processing queue and unloads after use. Temporary transcript/result files are removed after success, failure, or cancellation. Local Qwen inference stays on this computer. An explicitly selected cloud provider uses the same saving and acceptance path; see [BYOK](byok.md).
 
 The optional `Project.suggestions` contains a review ID, source fingerprint, timestamp, settings, section/review counts, a requested candidate count, and up to thirty candidates. `POST /api/projects/:id/suggestions/accept` validates the review ID, source fingerprint, and selected IDs transactionally before adding default 16:9 clips with Highlight captions. It is idempotent for already-saved time ranges. Concurrent transcript changes reject analysis application and acceptance with an explanatory message; a cancelled worker cannot save a review while waiting for a store transaction. Backups validate and preserve review metadata. The legacy `/suggestions` endpoint remains the fast-rule method.
 
@@ -82,3 +83,29 @@ Worker checkpoint events feed a serialized promise chain of transactional review
 YouTube import accepts an optional numeric source range, optional part interval, and 720/1080 quality. Shared range planning validates the complete batch before enqueueing up to 24 independent jobs. Dedupe keys include canonical URL, range, and quality. The Python worker permits long finished replays only when a bounded section is selected, applies FFmpeg section seeking/re-encoding and a file-size cap, and checks measured output duration before import. User input never becomes a shell command. Each downloaded part has a separate project and cancellation entry.
 
 Optional `captionMode` and `captionDuration` preserve compatibility with older clips. API defaults and shared edit comparison normalize old settings without falsely marking unchanged exports dirty. Preview, ASS output, and SRT grouping use the same word/phrase cues. The pop scale phase is based on the original cue start and retained when a clip trims into a cue. Build-up exports discrete word-reveal events. See [workflow and verification](long-streams-and-captions.md).
+
+## Cloud review and credentials
+
+`GET /api/ai/providers` returns only provider IDs, configured booleans, and key sources. `PUT /api/ai/providers/:provider` accepts `{ "apiKey": "..." }` for a server-memory session; `DELETE` forgets that session key. Environment keys are read on the server and remain available after deleting an override. No key is stored in project options or review results.
+
+The analyze route accepts `provider` (default `local`), `model`, and `maxRequests` (1–100, default 20). A non-local provider requires `cloudConsent: true`, an available key, and a model ID. Consent is validated at the request boundary and not persisted as a reusable permission. `server/ai-providers.ts` sends JSON schema or JSON-mode requests to catalog HTTPS endpoints or an operator-configured custom endpoint, rejects redirects, caps responses at 1 MB, bounds timeouts, and sanitizes errors. `server/cloud-suggestions.ts` scans overlapping sections and performs optional second reviews with a shared request budget. Model usage and partial status are saved alongside review metadata.
+
+Job cancellation aborts HTTP requests as well as local subprocesses. Completed request usage is informative, not an invoice. No provider credentials, response error bodies, or request headers enter history. The browser never calls a provider directly. The local server remains a single-user trust boundary, not a shared service with credential isolation.
+
+The shared provider catalog drives IDs, UI labels, key environment names, built-in destinations, and default JSON modes. Custom requests require `cloudDestination` matching the server-configured endpoint. `outputFormat` is `auto`, `json_schema`, or `json_object`; native OpenAI/Anthropic routes only allow schema output. No browser endpoint field changes the built-in or custom destination.
+
+## Social copy and Postiz publishing
+
+`server/publishing.ts` mounts additive routes for Postiz settings, channel discovery, clip copy generation/saving and submission. `server/social-copy.ts` fingerprints clip edits and transcript text, calls the existing cloud adapters or the bounded local `scripts/social_copy_worker.py`, and saves validated `Clip.socialCopy` only if the source remains unchanged. Cloud copy generation requires per-request consent; it uses one request. Model output cannot select channels, change destinations or publish content.
+
+`POST /api/projects/:id/clips/:clipId/publish` validates the saved source fingerprint, destination, upload consent, portrait duration and per-channel options. It reserves a persistent `Project.publications` record before queueing a `publish` job. The job checks connected channels and live posting limits, renders a fresh MP4 using the existing FFmpeg path, uploads it once using file-backed multipart data, and creates independent Postiz posts. Postiz handles scheduled delivery. The loopback studio needs no incoming webhook or public endpoint.
+
+Each channel transitions from pending to submitting to submitted. Intent is persisted before the external write. Lost or invalid receipts become unknown, with no automatic post retry. Duplicate clip-version/channel combinations are blocked even across restarts; explicit reconciliation after inspecting Postiz can release an unknown attempt. Cancellation stops remaining work and records confirmed receipts when available; already accepted posts must be managed in Postiz. Interrupted or restored metadata never resumes publishing. Backups preserve copy and submission history without credentials. Deleting a local project does not remove remote posts.
+
+`server/postiz.ts` restricts the API destination to trusted server configuration, rejects redirects, bounds responses/timeouts, hides upstream error bodies and uses only registered local export files. HTTPS is required except explicitly configured local HTTP. Remote media URLs must be HTTPS. See [publishing](publishing.md) for configuration, limits and isolated verification.
+
+## Stream autopilot
+
+`POST /api/streams` accepts a finished YouTube VOD URL, language, top-clip count, visibility, platforms, and per-stream `publishConsent`. It requires the downloader, installed Whisper large-v3, and ready local Qwen. `server/streams.ts` keeps `streams.json` in the data directory. A `stream` job reads the length (`youtube_worker.py --info`) and plans one-hour parts (`shared/streams.ts`). Each part is chained through ordinary queue jobs: range download into its own project (tagged `Project.stream`), large-v3 transcription without fast-rule clips, and a local Qwen review in Reviewed mode. When every part is terminal, one `autopost` job ranks candidates across parts (reviewed verdicts first, then alternating parts), adds 9:16 clips, tries face framing and local Qwen social copy, renders 1080×1920, and uploads through `server/social-upload.ts`.
+
+Each platform target is saved as `submitting` before the upload request. Refusals before an upload session exists are `failed`; lost receipts after bytes are sent are `unknown` and are never retried automatically. Account-wide refusals (quota, audit, expired sign-in) stop that platform for the rest of the run. After a restart, running work becomes failed and Retry resumes from the last finished stage. `server/social-accounts.ts` handles loopback OAuth with PKCE and state, then stores refresh tokens and Settings-entered app credentials owner-only in `social-accounts.json` (`PUT/DELETE /api/social/:platform/app`; secrets are never returned), outside project metadata and backups. See [Stream autopilot](stream-autopilot.md).

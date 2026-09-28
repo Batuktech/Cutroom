@@ -15,6 +15,7 @@ import {
   MonitorPlay,
   RefreshCw,
   Captions,
+  Radio,
 } from "lucide-react";
 import type { Health, Job, Project } from "../shared/types";
 import { api, post } from "./lib/api";
@@ -29,9 +30,10 @@ import { Settings } from "./components/Settings";
 import { JobHistory } from "./components/JobHistory";
 import { Exports } from "./components/Exports";
 import { Clips } from "./components/Clips";
+import { Streams } from "./components/Streams";
 import { latestExports } from "../shared/exports";
 
-type Page = "library" | "clips" | "exports" | "settings";
+type Page = "library" | "streams" | "clips" | "exports" | "settings";
 function currentRoute() {
   return window.location.hash.slice(1) || "library";
 }
@@ -41,7 +43,7 @@ function App() {
     [health, setHealth] = useState<Health | null>(null);
   const [page, setPage] = useState<Page>(
       () =>
-        (["library", "clips", "exports", "settings"].includes(currentRoute())
+        (["library", "streams", "clips", "exports", "settings"].includes(currentRoute())
           ? currentRoute()
           : "library") as Page,
     ),
@@ -120,7 +122,7 @@ function App() {
           const previous = seen.current.get(j.id);
           if (
             previous !== j.status &&
-            ["completed", "failed"].includes(j.status)
+            ["completed", "failed", "cancelled"].includes(j.status)
           ) {
             changed = true;
             if (openWhenReady.current === j.id) {
@@ -135,6 +137,7 @@ function App() {
             }
             if (previous) {
               if (j.status === "failed") notify(j.message, true);
+              else if (j.status === "cancelled") notify(j.kind === "publish" ? "Remaining preparation stopped. Manage posts already accepted in Postiz." : "Processing cancelled.");
               else if (j.kind === "reframe")
                 notify(
                   (j.result as { applied?: boolean })?.applied === false
@@ -155,6 +158,8 @@ function App() {
                 notify("Video imported. Your editing room is ready.");
               else if (j.kind === "model") notify("Local model installed.");
               else if (j.kind === "suggest") notify("Clip analysis finished. Open Suggest cuts to review the result.");
+              else if (j.kind === "social-copy" && j.status === "completed") notify("Social copy is ready. Open Prepare posts to review it.");
+              else if (j.kind === "publish" && j.status === "completed") notify("Posts accepted by Postiz. Check its calendar for publishing status.");
             }
           }
           seen.current.set(j.id, j.status);
@@ -199,7 +204,7 @@ function App() {
       } else {
         setProjectId(null);
         setPage(
-          (["library", "clips", "exports", "settings"].includes(hash)
+          (["library", "streams", "clips", "exports", "settings"].includes(hash)
             ? hash
             : "library") as Page,
         );
@@ -306,6 +311,12 @@ function App() {
                 label: "Studio",
                 icon: Film,
                 count: projects.length,
+              },
+              {
+                id: "streams",
+                label: "Streams",
+                icon: Radio,
+                count: 0,
               },
               {
                 id: "clips",
@@ -416,6 +427,8 @@ function App() {
                 <span>
                   {page === "library"
                     ? "The editing room"
+                    : page === "streams"
+                      ? "Hands-off clipping"
                     : page === "clips"
                       ? "Your selection"
                       : page === "exports"
@@ -448,6 +461,14 @@ function App() {
                   }}
                   remove={setRemove}
                   showClips={() => navigate("clips")}
+                />
+              )}
+              {page === "streams" && (
+                <Streams
+                  health={health}
+                  openProject={openProject}
+                  openSettings={() => navigate("settings")}
+                  notify={notify}
                 />
               )}
               {page === "clips" && (
@@ -505,6 +526,10 @@ function App() {
                               ? "Downloading from YouTube"
                               : j.kind === "suggest"
                                 ? "Reviewing potential clips"
+                              : j.kind === "autopost"
+                                ? "Rendering and publishing stream clips"
+                              : j.kind === "stream"
+                                ? "Planning stream parts"
                             : j.kind === "import"
                               ? "Importing footage"
                               : j.kind === "transcribe"

@@ -640,3 +640,20 @@
 .suggestion-diagnostics p, .suggestion-diagnostics li { color: var(--muted); line-height: 1.7; }
 .suggestion-verdict { display: inline-block; color: var(--muted); font-size: 12px; margin-top: 8px; }
 @media (max-width: 420px) { .suggestion-interests > div { grid-template-columns: 1fr; } }
+
+.ai-provider-controls {
+  padding: 18px;
+  margin: 16px 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.ai-provider-controls > .field-label { margin-bottom: 14px; }
+.provider-key-form { padding-block: 12px; min-width: 0; }
+.provider-key-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 12px 0; }
+.provider-key-actions a { font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
+.cloud-consent { display: flex; gap: 12px; align-items: flex-start; font-size: 12px; line-height: 1.7; margin-top: 16px; }
+.cloud-consent input { flex: 0 0 auto; margin-top: 5px; }
+.cloud-ai-settings > .field-label { max-width: 420px; }
+.ai-provider-controls input:not([type="checkbox"]), .provider-key-form input { min-width: 0; width: 100%; }
+
+.provider-endpoint, .cloud-consent span { overflow-wrap: anywhere; }

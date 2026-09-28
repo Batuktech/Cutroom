@@ -8,7 +8,11 @@ const labels: Record<Job["kind"], string> = {
   reframe: "Face framing",
   model: "Model installation",
   preview: "Browser preview",
-  suggest: "Qwen clip analysis",
+  suggest: "AI clip analysis",
+  "social-copy": "Social copy generation",
+  publish: "Postiz submission",
+  stream: "Stream planning",
+  autopost: "Stream auto-publishing",
 };
 export function JobHistory({ jobs }: { jobs: Job[] }) {
   const finished = jobs
@@ -37,7 +41,7 @@ export function JobHistory({ jobs }: { jobs: Job[] }) {
               </strong>
               <p>
                 {job.status === "completed"
-                  ? "Finished on this computer"
+                  ? job.kind === "publish" ? "Accepted by Postiz. Check its calendar for publishing status." : "Finished processing"
                   : job.message}
               </p>
             </div>

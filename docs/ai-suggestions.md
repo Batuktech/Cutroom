@@ -1,11 +1,13 @@
-# Local AI clip suggestions
+# AI clip suggestions
 
 Qwen3-8B is integrated into Cutroom's **Suggest cuts** dialog. It is separate from Whisper: Whisper turns audio into timed text; Qwen reads that text to propose passages. The model name is Qwen3-8B (8 billion parameters).
+
+For optional cloud API models, including GLM, Kimi, OpenAI, Anthropic, and Gemini, see [cloud BYOK](byok.md). The selection and preview controls below apply to both; runtime and worker details refer to local Qwen.
 
 ## Use it
 
 1. Import a video, transcribe it, and save any caption corrections.
-2. Open **Suggest cuts → Local AI review**.
+2. Open **Suggest cuts → AI review → Local Qwen3-8B**.
 3. Check any combination of the nine **Interests**. A passage can match any one selected interest; it need not satisfy all of them. Choices cover conversations, humor, advice, stories, surprises, disagreements, emotion, reactions, and quotable lines.
 4. Set **Maximum clip length** to **Up to 20, 30, 40, … 100 seconds**. This is a ceiling, not a target: a 20-second clip is eligible under 100 seconds. The default minimum is five seconds. Set **Candidates to review** to 5, 10, 20, 25 (default), or 30.
 5. Keep **Discovery** for the broadest first selection, or choose the modes below. Expand **Timing limits & custom guidance** to adjust the minimum duration, allowed pause, and a prompt of up to 600 characters.
@@ -40,7 +42,7 @@ Follow [Qwen setup](qwen-setup.md) to install the separate runtime and model. Th
 
 The current Linux/NVIDIA/Vulkan preset uses 24 GPU layers, a 2,048-token context, two CPU threads, and lower process priority. Before inference it requires approximately 3 GB available RAM and 3.8 GB free GPU memory. Repeated low-memory readings stop analysis. These safeguards do not guarantee that every other app will remain smooth. The model unloads after completion or cancellation.
 
-`npm run doctor` checks the optional runtime/model. Missing dependencies disable AI review while leaving fast rules available. `npm run setup:ai` installs Whisper and the downloader, not Qwen. Virtual environments are not portable between computers.
+`npm run doctor` checks the optional runtime/model. Missing dependencies disable local Qwen review while leaving fast rules available. `npm run setup:ai` installs Whisper and the downloader, not Qwen. Virtual environments are not portable between computers.
 
 ## Limits and checks
 

@@ -3,6 +3,9 @@ import { LoaderCircle, Play, Scissors } from "lucide-react";
 import type { Health, Job, Project } from "../../shared/types";
 import type { ClipSuggestion } from "../../shared/suggestions";
 import { defaultSuggestionOptions, suggestionInterests, type SuggestionOptions } from "../../shared/suggestion-options";
+import { providerDetails, cloudProviders, type AIProvider } from "../../shared/ai-providers";
+import { useAIProviders } from "../lib/useAIProviders";
+import { ProviderKeyDisclosure } from "./AIProviderSettings";
 import { post } from "../lib/api";
 import { time } from "../lib/utils";
 import { Button } from "./ui/button";
@@ -38,6 +41,13 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
   const [method, setMethod] = useState<"ai" | "fast">("ai");
   const [target, setTarget] = useState(35);
   const [options, setOptions] = useState<SuggestionOptions>(review?.options ?? defaultSuggestionOptions);
+  const provider = options.provider ?? "local";
+  const cloud = provider !== "local";
+  const [consent, setConsent] = useState(false);
+  const closeDialog = () => { setConsent(false); close(); };
+  const providers = useAIProviders(open);
+  const providerStatus = providers.statuses.find(s => s.provider === provider);
+  const providerReady = cloud ? !!providerStatus?.configured && (provider !== "custom" || !!providerStatus?.endpointReady) && !!options.model?.trim() && consent : !!health?.qwen?.ready;
   const changeOptions = (patch: Partial<SuggestionOptions>) => setOptions(current => ({ ...current, ...patch }));
   const [selected, setSelected] = useState<string[]>([]);
   const [preview, setPreview] = useState<ClipSuggestion | null>(null);
@@ -65,8 +75,9 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
     setPending(true); setError("");
     try {
       if (method === "ai") {
-        await post(`/projects/${project.id}/suggestions/analyze`, options);
-        notify("Qwen analysis queued. You can keep working while it runs.");
+        await post(`/projects/${project.id}/suggestions/analyze`, { ...options, cloudConsent: cloud && consent, ...(provider === "custom" ? { cloudDestination: providerStatus?.endpoint } : {}) });
+        setConsent(false);
+        notify("AI analysis queued. You can keep working while it runs.");
       } else {
         await post(`/projects/${project.id}/suggestions`, { target });
         notify("Fast suggestions added. These use transcript rules, not Qwen.");
@@ -82,19 +93,47 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
       const result = await post<{ added: number }>(`/projects/${project.id}/suggestions/accept`, { reviewId: review.id, ids: selected });
       await refresh();
       notify(result.added ? `${result.added} reviewed ${result.added === 1 ? "clip" : "clips"} added.` : "Those clips are already saved.");
-      close();
+      closeDialog();
     } catch (e) { setError((e as Error).message); }
     finally { setPending(false); }
   }
   const alreadyAdded = (candidate: ClipSuggestion) => project.clips.some((c) => Math.abs(c.start-candidate.start) < .1 && Math.abs(c.end-candidate.end) < .1);
 
-  return <Dialog open={open} onOpenChange={(value) => { if (!value && !pending) close(); }} title="Find the clips worth keeping"
-    description="Choose what interests you, set a maximum length, and preview the passages Qwen finds. You make the final selection." wide>
+  return <Dialog open={open} onOpenChange={(value) => { if (!value && !pending) closeDialog(); }} title="Find the clips worth keeping"
+    description="Choose what interests you, set a maximum length, and preview the passages the AI finds. You make the final selection." wide>
     <div className="import-method suggestion-method" role="group" aria-label="Suggestion method">
-      <Button variant={method === "ai" ? "default" : "secondary"} aria-pressed={method === "ai"} disabled={pending} onClick={() => { setMethod("ai"); setError(""); }}>Local AI review</Button>
+      <Button variant={method === "ai" ? "default" : "secondary"} aria-pressed={method === "ai"} disabled={pending} onClick={() => { setMethod("ai"); setError(""); }}>AI review</Button>
       <Button variant={method === "fast" ? "default" : "secondary"} aria-pressed={method === "fast"} disabled={pending} onClick={() => { setMethod("fast"); setError(""); }}>Fast transcript rules</Button>
     </div>
     {method === "ai" ? <>
+      <div className="ai-provider-controls">
+        <label className="field-label">Review with<select value={provider} disabled={pending || !!active} onChange={e => {
+          const next = e.target.value as AIProvider;
+          changeOptions({ provider: next, model: providerDetails[next].model, outputFormat: "auto" }); setConsent(false);
+        }}>
+          <option value="local">Local Qwen3-8B · no API cost</option>
+          {cloudProviders.map(id => <option key={id} value={id}>{providerDetails[id].name} · your API key</option>)}
+        </select></label>
+        {cloud && <>
+          <div className="suggestion-controls">
+            <label className="field-label">Model ID<input value={options.model ?? ""} disabled={pending || !!active} maxLength={120} autoComplete="off" spellCheck={false}
+              placeholder={providerDetails[provider].model || "Exact model ID from your provider"} onChange={e => changeOptions({ model: e.target.value })} /></label>
+            <label className="field-label">Request cap per analysis<select value={options.maxRequests ?? 20} disabled={pending || !!active} onChange={e => changeOptions({ maxRequests: Number(e.target.value) })}>
+              {[1, 5, 10, 20, 40, 60, 100].map(n => <option key={n} value={n}>Up to {n} {n === 1 ? "request" : "requests"}</option>)}
+            </select></label>
+          </div>
+          {provider !== "openai" && provider !== "anthropic" && <label className="field-label">Output compatibility<select value={options.outputFormat ?? "auto"} disabled={pending || !!active} onChange={e => changeOptions({ outputFormat: e.target.value as SuggestionOptions["outputFormat"] })}>
+            <option value="auto">Provider default · {providerDetails[provider].format === "json_object" ? "JSON mode" : "JSON schema"}</option>
+            <option value="json_schema">JSON schema</option><option value="json_object">JSON mode</option>
+          </select></label>}
+          <p className="suggestion-note">Choose a model supporting the selected JSON format. JSON mode uses a schema in the prompt; all proposals still pass local validation. Each request allows up to 4,096 output tokens. This is a request cap, not a money limit; set a spending limit with your provider. Findings are saved as sections finish. Reaching the cap can leave a partial scan.</p>
+          <ProviderKeyDisclosure key={provider} provider={provider} status={providerStatus} refresh={providers.refresh} />
+          {providers.error && <p role="alert" className="error-message">{providers.error} <Button variant="secondary" size="small" onClick={() => void providers.refresh()}>Retry</Button></p>}
+          <label className="cloud-consent"><input type="checkbox" checked={consent} disabled={pending || !!active} onChange={e => setConsent(e.target.checked)} />
+            <span>For this analysis, send transcript text, timestamps, interests, and guidance to {providerDetails[provider].name}{provider === "custom" ? ` at ${providerStatus?.endpoint || "the configured endpoint"}` : ""}{provider === "openrouter" ? " and its model provider" : ""}. I understand API usage may cost money. Audio and video stay on this computer.</span>
+          </label>
+        </>}
+      </div>
       <div className="suggestion-controls">
         <label className="field-label">Maximum clip length
           <select value={options.maxDuration} disabled={pending || !!active} onChange={e => changeOptions({ maxDuration: Number(e.target.value) })}>
@@ -134,19 +173,19 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
             {[2, 4, 8, 15, 30].map(n => <option key={n} value={n}>{n} seconds</option>)}
           </select></label>
         </div>
-        <label className="field-label">What else should Qwen look for?
+        <label className="field-label">What else should the AI look for?
           <textarea rows={3} maxLength={600} value={options.guidance} disabled={pending || !!active} onChange={e => changeOptions({ guidance: e.target.value })} placeholder="For example: prioritize gambling stories and awkward comebacks; avoid routine introductions." />
         </label>
         <p className="suggestion-note">Guidance steers the AI. It is not an exact keyword filter.</p>
       </details>
-      <p className="suggestion-note">Eligible clips are {options.minDuration}–{options.maxDuration} seconds. A 20-second moment can qualify when the maximum is 100 seconds. Qwen scans the whole transcript locally and saves findings as sections finish. Long scans can still take many minutes.</p>
+      <p className="suggestion-note">Eligible clips are {options.minDuration}–{options.maxDuration} seconds. A 20-second moment can qualify when the maximum is 100 seconds. {cloud ? "Cloud analysis scans sections within your request cap. A second review uses an additional request per candidate." : "Qwen scans the whole transcript locally and saves findings as sections finish. Long scans can still take many minutes."}</p>
     </> : <>
       <label className="field-label">Aim for this length<select value={target} disabled={pending || !!active} onChange={e => setTarget(Number(e.target.value))}>
         {[15, 20, 25, 30, 35, 60, 90].map(n => <option key={n} value={n}>{n} seconds</option>)}
       </select></label>
       <p className="suggestion-note">Finds keywords, questions, and pauses. Adds up to six editable clips immediately, without an AI content review.</p>
     </>}
-    {method === "ai" && !health?.qwen?.ready && <p role="status" className="error-message">{health?.qwen?.message || "Checking local Qwen availability…"} Fast transcript rules remain available.</p>}
+    {method === "ai" && !cloud && !health?.qwen?.ready && <p role="status" className="error-message">{health?.qwen?.message || "Checking local Qwen availability…"} Fast transcript rules remain available.</p>}
     {error && <p role="alert" className="error-message">{error}</p>}
     {lastAnalysis?.status === "failed" && method === "ai" && <p role="alert" className="error-message">Last analysis: {lastAnalysis.message}</p>}
     {active && <div className="suggestion-progress" role="status">
@@ -155,8 +194,8 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
       <Button variant="secondary" size="small" onClick={() => void post(`/jobs/${active.id}/cancel`).then(refresh).catch((e) => setError(e.message))}>{analysisRunning ? "Stop analysis, keep findings" : "Cancel processing"}</Button>
     </div>}
     <div className="dialog-actions">
-      <Button variant="secondary" disabled={pending} onClick={close}>{active ? "Keep working" : "Close"}</Button>
-      <Button disabled={pending || !!active || !project.transcript.length || (method === "ai" && (!health?.qwen?.ready || !options.interests.length))} onClick={run}>
+      <Button variant="secondary" disabled={pending} onClick={closeDialog}>{active ? "Keep working" : "Close"}</Button>
+      <Button disabled={pending || !!active || !project.transcript.length || (method === "ai" && (!providerReady || !options.interests.length))} onClick={run}>
         {pending && <LoaderCircle size={16} className="spin" />}
         {method === "ai" ? (review ? "Analyze again" : "Analyze transcript") : "Add fast suggestions"}
       </Button>
@@ -166,7 +205,8 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
       <p className="suggestion-note">{review.options
         ? `${review.options.interests.map(id => suggestionInterests.find(i => i.id === id)?.label).join(", ")} · up to ${review.options.maxDuration}s · ${review.options.strictness}`
         : `Legacy review · ${review.focus} · old target ${review.target}s`} · {new Date(review.createdAt).toLocaleString()}. These are possibilities to review, not predictions of views.</p>
-      {review.complete === false && <p role="status" className="notice">{analysisRunning ? "Live findings: preview now, or stop analysis to select from the saved candidates." : "Partial scan. These saved findings are available to preview and add; the whole transcript was not completed."}</p>}
+      {review.usage && <p className="suggestion-note">{providerDetails[review.usage.provider].name} · {review.usage.model} · {review.usage.requests} API {review.usage.requests === 1 ? "request" : "requests"} · {review.usage.inputTokens.toLocaleString()} input / {review.usage.outputTokens.toLocaleString()} output tokens reported{review.usage.limitReached ? " · Request cap reached" : ""}. Provider billing is authoritative; failed or cancelled requests may also be billed.</p>}
+      {review.complete === false && <p role="status" className="notice">{analysisRunning ? "Live findings: preview now, or stop analysis to select from the saved candidates." : "Partial scan. These saved findings are available to preview and add; some sections or second reviews remain unfinished."}</p>}
       {review.diagnostics && <details className="suggestion-diagnostics"><summary>How this result was selected</summary>
         <p>{review.diagnostics.proposed} proposed · {review.diagnostics.invalid} outside source/timing rules · {review.diagnostics.duplicates} {review.diagnostics.duplicates === 1 ? "duplicate" : "duplicates"} · {review.diagnostics.rejected} rejected by Strict review</p>
         <p>{review.diagnostics.emptySections} {review.diagnostics.emptySections === 1 ? "section contained" : "sections contained"} no AI proposals. The saved list is capped at {review.requested ?? 25} candidates.</p>

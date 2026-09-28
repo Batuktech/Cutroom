@@ -3,6 +3,8 @@ import { access } from "node:fs/promises";
 import { z } from "zod";
 import { clipSchema, segmentSchema } from "./domain.js";
 import { suggestionReviewSchema } from "../shared/suggestions.js";
+import { publicationSchema, savedSocialCopySchema } from "../shared/publishing.js";
+import { projectStreamSchema } from "../shared/streams.js";
 import { EXPORTS, MEDIA, listProjects, restoreProjects } from "./store.js";
 import type { Project, RestoreSummary } from "../shared/types.js";
 
@@ -38,6 +40,7 @@ const projectSchema = z
           status: z.enum(["draft", "exported"]),
           createdAt: date,
           reason: z.string().max(500).optional(),
+          socialCopy: savedSocialCopySchema.optional(),
         }),
       )
       .max(1000),
@@ -64,6 +67,8 @@ const projectSchema = z
       .max(5000),
     demo: z.boolean(),
     suggestions: suggestionReviewSchema.optional(),
+    publications: z.array(publicationSchema).max(500).optional(),
+    stream: projectStreamSchema.optional(),
     previewFile: assetName.optional(),
   })
   .refine(
@@ -108,6 +113,11 @@ export async function restoreBackup(
     missingExports: 0,
   };
   for (const project of backup.projects) {
+    // Restoring metadata never resumes uploads or external submissions.
+    for (const record of project.publications ?? []) for (const channel of record.channels) {
+      if (channel.state === "pending") channel.state = "failed";
+      if (channel.state === "submitting") channel.state = "unknown";
+    }
     if (existing.has(project.id)) {
       summary.existing.push(project.name);
       continue;

@@ -4,6 +4,10 @@ Run all commands from the checkout root. Copy [.env.example](../.env.example) to
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
+| Provider API keys | Unset | Optional server-only keys; see the full [provider catalog](byok.md) and `.env.example`. UI session keys take precedence. |
+| `POSTIZ_API_KEY` | Unset | Optional server-only key for [Postiz publishing](publishing.md). A UI session key takes precedence. |
+| `CUTROOM_POSTIZ_API_URL` | `https://api.postiz.com/public/v1` | Trusted Postiz API URL ending in `/public/v1`. HTTPS required except localhost HTTP. |
+| `CUTROOM_CUSTOM_AI_BASE_URL` | Unset | Trusted HTTPS OpenAI-compatible API base for Custom review; configured on the server only. |
 | `CUTROOM_PORT` | `4318` | Loopback API and built UI port. |
 | `CUTROOM_DATA_DIR` | `.cutroom` | Project metadata, copied media, exports, history, and downloaded models. Relative paths resolve from the working directory. |
 | `CUTROOM_VULKAN_DEVICE` | `1` | Vulkan physical device index used by the Qwen worker. Hardware-specific; check [Qwen setup](qwen-setup.md). |

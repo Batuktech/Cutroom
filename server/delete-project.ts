@@ -31,7 +31,7 @@ export async function deleteProject(id: string) {
     for (const name of await readdir(TRANSCRIPTS))
       if (name.startsWith(id + '-') && /\.(json|srt)$/.test(name)) files.add(asset(TRANSCRIPTS, name));
     for (const job of jobs.filter((job) => job.projectId === id)) {
-      for (const suffix of ['.json', '.ass', '-preview.mp4', '-suggest-input.json', '-suggest-output.json']) files.add(asset(TEMP, job.id + suffix));
+      for (const suffix of ['.json', '.ass', '-preview.mp4', '-suggest-input.json', '-suggest-output.json', '-social-input.json', '-social-output.json']) files.add(asset(TEMP, job.id + suffix));
     }
     let deletedFiles = 0, reclaimedBytes = 0, sharedFiles = 0;
     // Validate every path and file type before removing anything. Never follow a symlink.

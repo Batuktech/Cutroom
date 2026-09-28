@@ -252,6 +252,7 @@ export async function transcribeProject(
   model: string,
   language: string,
   context: JobContext,
+  quickClips = true,
 ) {
   const project = getProject(id);
   if (!project.hasAudio)
@@ -318,7 +319,7 @@ export async function transcribeProject(
       p.clips.forEach((clip) => {
         clip.status = "draft";
       });
-      if (!p.clips.length)
+      if (quickClips && !p.clips.length)
         p.clips = suggestClips(p.transcript, p.duration).map((c) => ({
           ...c,
           id: randomUUID(),
@@ -435,6 +436,7 @@ export async function exportClip(
       ),
     );
     await updateProject(projectId, (p) => {
+      context.signal?.throwIfAborted();
       p.exports.unshift(file);
       const original = p.clips.find((c) => c.id === clip.id);
       if (

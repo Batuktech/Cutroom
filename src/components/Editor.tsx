@@ -26,6 +26,7 @@ import { Timeline } from "./Timeline";
 import { Inspector } from "./Inspector";
 import { sameClipEdits } from "../../shared/clips";
 import { SuggestionDialog } from "./SuggestionDialog";
+import { PublishDialog } from "./PublishDialog";
 
 export function Editor({
   project,
@@ -55,6 +56,7 @@ export function Editor({
   const [saving, setSaving] = useState(false);
   const [captionDirty, setCaptionDirty] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
   const [transcribeOpen, setTranscribeOpen] = useState(false);
   const [quality, setQuality] = useState("1080");
   const [language, setLanguage] = useState("auto");
@@ -322,6 +324,7 @@ export function Editor({
             {saving && <LoaderCircle size={14} className="spin" />}Save changes
           </Button>
           <Button
+            variant="secondary"
             size="small"
             disabled={!draft || busy || saving || captionDirty}
             onClick={() => setExportOpen(true)}
@@ -329,6 +332,10 @@ export function Editor({
             <Download size={16} />
             Export clip
           </Button>
+          <Button size="small" disabled={!draft || saving || captionDirty} onClick={() => void (async () => {
+            if (dirty && !(await save())) return;
+            setPublishOpen(true);
+          })()}>Prepare posts</Button>
         </div>
       </header>
       {activeJob && (
@@ -654,6 +661,7 @@ export function Editor({
         </div>
       </Dialog>
       <SuggestionDialog key={project.suggestions?.id ?? "initial"} open={suggestOpen} close={() => setSuggestOpen(false)} project={project} health={health} jobs={jobs} refresh={refresh} notify={notify} />
+      {publishOpen && selected && <PublishDialog project={project} clip={selected} jobs={jobs} health={health} close={() => setPublishOpen(false)} refresh={refresh} openSettings={openSettings} />}
       <Dialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
