@@ -21,7 +21,8 @@
     "preview": "vite preview",
     "test:python": "python3 -m unittest discover -s scripts -p 'test_*.py'",
     "check:docs": "node scripts/check-docs.mjs",
-    "test:byok": "node --import tsx scripts/byok-integration.mjs"
+    "test:byok": "node --import tsx scripts/byok-integration.mjs",
+    "test:postiz": "node --import tsx scripts/postiz-integration.mjs"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",

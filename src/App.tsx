@@ -120,7 +120,7 @@ function App() {
           const previous = seen.current.get(j.id);
           if (
             previous !== j.status &&
-            ["completed", "failed"].includes(j.status)
+            ["completed", "failed", "cancelled"].includes(j.status)
           ) {
             changed = true;
             if (openWhenReady.current === j.id) {
@@ -135,6 +135,7 @@ function App() {
             }
             if (previous) {
               if (j.status === "failed") notify(j.message, true);
+              else if (j.status === "cancelled") notify(j.kind === "publish" ? "Remaining preparation stopped. Manage posts already accepted in Postiz." : "Processing cancelled.");
               else if (j.kind === "reframe")
                 notify(
                   (j.result as { applied?: boolean })?.applied === false
@@ -155,6 +156,8 @@ function App() {
                 notify("Video imported. Your editing room is ready.");
               else if (j.kind === "model") notify("Local model installed.");
               else if (j.kind === "suggest") notify("Clip analysis finished. Open Suggest cuts to review the result.");
+              else if (j.kind === "social-copy" && j.status === "completed") notify("Social copy is ready. Open Prepare posts to review it.");
+              else if (j.kind === "publish" && j.status === "completed") notify("Posts accepted by Postiz. Check its calendar for publishing status.");
             }
           }
           seen.current.set(j.id, j.status);

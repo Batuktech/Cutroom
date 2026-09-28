@@ -435,6 +435,7 @@ export async function exportClip(
       ),
     );
     await updateProject(projectId, (p) => {
+      context.signal?.throwIfAborted();
       p.exports.unshift(file);
       const original = p.clips.find((c) => c.id === clip.id);
       if (

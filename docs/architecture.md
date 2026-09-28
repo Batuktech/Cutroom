@@ -46,7 +46,7 @@ This is a single-user local application. It has no accounts or tenant system and
 
 FFmpeg and FFprobe receive a `file,pipe` protocol whitelist. A submitted file cannot make these tools fetch a remote media playlist. Uploaded files must pass probing before they reach the Python workers. This boundary is covered by a network-playlist integration fixture.
 
-Fonts are bundled. There is no analytics, cloud media storage, or remote inference. Dependencies are downloaded during installation. Model installation contacts Hugging Face. YouTube URL import is a separate explicit internet operation: a canonical video ID is passed to the project-local yt-dlp worker. User configuration, browser cookies, external plugins, and remote EJS components are not loaded. The existing Node runtime executes the installed EJS package. The Python transcription path requires a completed local model and sets offline mode.
+Fonts are bundled and there is no analytics. Optional cloud transcript review and Postiz publishing are explicit network operations with server-only credentials. Dependencies are downloaded during installation. Model installation contacts Hugging Face. YouTube URL import is a separate explicit internet operation: a canonical video ID is passed to the project-local yt-dlp worker. User configuration, browser cookies, external plugins, and remote EJS components are not loaded. The existing Node runtime executes the installed EJS package. The Python transcription path requires a completed local model and sets offline mode.
 
 ## Persistence and processing
 
@@ -93,3 +93,13 @@ The analyze route accepts `provider` (default `local`), `model`, and `maxRequest
 Job cancellation aborts HTTP requests as well as local subprocesses. Completed request usage is informative, not an invoice. No provider credentials, response error bodies, or request headers enter history. The browser never calls a provider directly. The local server remains a single-user trust boundary, not a shared service with credential isolation.
 
 The shared provider catalog drives IDs, UI labels, key environment names, built-in destinations, and default JSON modes. Custom requests require `cloudDestination` matching the server-configured endpoint. `outputFormat` is `auto`, `json_schema`, or `json_object`; native OpenAI/Anthropic routes only allow schema output. No browser endpoint field changes the built-in or custom destination.
+
+## Social copy and Postiz publishing
+
+`server/publishing.ts` mounts additive routes for Postiz settings, channel discovery, clip copy generation/saving and submission. `server/social-copy.ts` fingerprints clip edits and transcript text, calls the existing cloud adapters or the bounded local `scripts/social_copy_worker.py`, and saves validated `Clip.socialCopy` only if the source remains unchanged. Cloud copy generation requires per-request consent; it uses one request. Model output cannot select channels, change destinations or publish content.
+
+`POST /api/projects/:id/clips/:clipId/publish` validates the saved source fingerprint, destination, upload consent, portrait duration and per-channel options. It reserves a persistent `Project.publications` record before queueing a `publish` job. The job checks connected channels and live posting limits, renders a fresh MP4 using the existing FFmpeg path, uploads it once using file-backed multipart data, and creates independent Postiz posts. Postiz handles scheduled delivery. The loopback studio needs no incoming webhook or public endpoint.
+
+Each channel transitions from pending to submitting to submitted. Intent is persisted before the external write. Lost or invalid receipts become unknown, with no automatic post retry. Duplicate clip-version/channel combinations are blocked even across restarts; explicit reconciliation after inspecting Postiz can release an unknown attempt. Cancellation stops remaining work and records confirmed receipts when available; already accepted posts must be managed in Postiz. Interrupted or restored metadata never resumes publishing. Backups preserve copy and submission history without credentials. Deleting a local project does not remove remote posts.
+
+`server/postiz.ts` restricts the API destination to trusted server configuration, rejects redirects, bounds responses/timeouts, hides upstream error bodies and uses only registered local export files. HTTPS is required except explicitly configured local HTTP. Remote media URLs must be HTTPS. See [publishing](publishing.md) for configuration, limits and isolated verification.

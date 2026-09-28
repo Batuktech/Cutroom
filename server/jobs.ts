@@ -43,8 +43,9 @@ export function initializeJobs() {
     for (const job of saved.slice(0, 100)) {
       if (["running", "queued"].includes(job.status)) {
         job.status = "failed";
-        job.message =
-          "Interrupted when the local server stopped. Your source is safe; run this action again.";
+        job.message = job.kind === "publish"
+          ? "Interrupted during post preparation. Check Prepare posts and the Postiz calendar before trying again."
+          : "Interrupted when the local server stopped. Your source is safe; run this action again.";
         job.finishedAt = new Date().toISOString();
       }
       jobs.push(job);
@@ -61,8 +62,9 @@ export function stopJobs() {
   for (const job of jobs)
     if (["queued", "running"].includes(job.status)) {
       job.status = "cancelled";
-      job.message =
-        "Stopped with the local server. Run this action again to resume work.";
+      job.message = job.kind === "publish"
+        ? "Stopped with the local server. Posts already accepted must be managed in Postiz."
+        : "Stopped with the local server. Run this action again to resume work.";
       job.finishedAt = new Date().toISOString();
     }
   for (const controller of controllers.values()) controller.abort();
@@ -246,7 +248,7 @@ export function cancelJob(id: string) {
   if (!job) throw Object.assign(new Error("Job not found."), { status: 404 });
   if (job.status === "queued" || job.status === "running") {
     job.status = "cancelled";
-    job.message = "Cancelled";
+    job.message = job.kind === "publish" ? "Remaining work cancelled. Check Postiz for posts already accepted." : "Cancelled";
     job.finishedAt = new Date().toISOString();
     controllers.get(id)?.abort();
     const child = processes.get(id);

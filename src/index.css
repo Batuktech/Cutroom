@@ -9,6 +9,7 @@
 @import "./styles/editor.css";
 @import "./styles/responsive.css";
 @import "./styles/mobile-controls.css";
+@import "./styles/publishing.css";
 
 @font-face {
   font-family: "Cutroom Caption Fallback";

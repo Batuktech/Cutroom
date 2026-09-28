@@ -20,6 +20,7 @@ Cutroom is a local-first video clipping studio with transcript editing, optional
 - **Frame and export.** 16:9, 9:16, 1:1, and 4:5; crop or fit; 720p/1080p H.264/AAC MP4, separate SRT, and delivery ZIPs. New clips default to **Highlight + 16:9**.
 - **Import finished YouTube replays.** Download a bounded range or split it into 15/30/60-minute projects. Each project stays independently editable.
 - **Keep control of files.** Local project storage, metadata backup/restore, cancellable jobs, transcript history, and confirmed project-file deletion.
+- **Prepare social posts.** Generate descriptions and hashtags, then render and send a saved portrait clip to Postiz for YouTube, TikTok and Instagram drafts, schedules or immediate publishing. [Setup and limits](docs/publishing.md).
 
 ## Quick start
 
@@ -66,11 +67,13 @@ Choose from 16 providers—including OpenAI, Anthropic, GLM/Z.ai, Kimi/Moonshot,
 4. Choose the frame and caption style, then save.
 5. Export, watch the actual rendered result, and download the MP4/SRT or delivery ZIP.
 
+For connected channels, **Prepare posts** renders and uploads through Postiz automatically. Manual export/download is optional; review the copy, frame and channel settings before submitting.
+
 Keyboard shortcuts: **Space** play/pause, **←/→** seek, **I/O** set clip boundaries, **Ctrl/Cmd+S** save, and **Ctrl/Cmd+K** search. Text fields keep their normal typing behavior. The editor prompts before leaving unsaved changes.
 
 ## Privacy and storage
 
-The API binds to `127.0.0.1`. Cutroom has no authentication system and is intended for one user on their own computer, not public hosting. Media processing and installed-model inference are local; dependency/model downloads and YouTube imports use the internet explicitly. Optional cloud AI review sends transcript text, timestamps, and editorial guidance to your chosen provider after confirmation. Audio and video remain local. The app does not extract browser cookies.
+The API binds to `127.0.0.1`. Cutroom has no authentication system and is intended for one user on their own computer, not public hosting. Media processing and installed-model inference are local; dependency/model downloads and YouTube imports use the internet explicitly. Optional cloud AI review sends transcript text, timestamps, and editorial guidance to your chosen provider after confirmation. AI requests keep audio and video local. Optional Postiz publishing uploads rendered clips and social copy after confirmation. The app does not extract browser cookies.
 
 Data defaults to `.cutroom/`: copied source media, transcripts, clip settings, exports, job history, and models. Back up the entire directory while the app is stopped. Metadata exports do not include footage. **Delete project and files** permanently deletes registered local assets after confirmation. [Storage, privacy, and recovery](docs/privacy.md).
 
@@ -80,7 +83,7 @@ Data defaults to `.cutroom/`: copied source media, transcripts, clip settings, e
 - Each imported project is limited to **2 GB and three hours**. Use bounded parts for longer finished replays. Active livestreams and playlist-only imports are unsupported.
 - Whisper can mishear speech. Qwen reads text, not expressions, music, video frames, or audience analytics. Suggestions can miss good moments or return fewer clips than requested; they do not predict views or income.
 - Local transcription and AI review can take many minutes on long recordings. One processing queue limits contention but does not guarantee smooth multitasking.
-- Face assistance suggests a fixed crop from sampled frames; it does not track a moving speaker. There is no speaker diarization, multi-track montage, generative video, or automatic social publishing.
+- Face assistance suggests a fixed crop from sampled frames; it does not track a moving speaker. There is no speaker diarization, multi-track montage or generative video. Postiz publishing requires connected channels and explicit submission; AI discoveries are not automatically published.
 - YouTube availability and formats can change. Import only recordings you are entitled to use.
 
 ## Development

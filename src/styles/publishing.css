@@ -1,0 +1,16 @@
+.social-summary { display: grid; gap: 8px; padding-bottom: 20px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.social-summary span, .social-history p, .social-channel-list, .social-channels > p { color: var(--muted); font-size: .875rem; line-height: 1.7; }
+.social-fieldset { border: 0; padding: 0; margin: 16px 0; min-width: 0; }
+.social-fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.social-check { display: flex; align-items: center; gap: 12px; min-height: 44px; padding-block: 8px; font-size: .875rem; line-height: 1.6; overflow-wrap: anywhere; }
+.social-check input { flex: 0 0 20px; width: 20px; height: 20px; accent-color: var(--accent); }
+.social-copy-section { border-bottom: 1px solid var(--line); padding-block: 8px; }
+.social-copy-section summary { cursor: pointer; min-height: 44px; padding-block: 12px; font-size: .875rem; font-weight: 650; }
+.social-copy-section .field-label { margin-block: 12px; }
+.social-channels, .social-history { margin-top: 28px; }
+.social-channel { border-bottom: 1px solid var(--line); padding-block: 12px; }
+.social-history > div { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 16px; }
+.social-history { overflow-wrap: anywhere; }
+.social-history strong { display: block; margin-top: 12px; font-size: .875rem; }
+.social-fieldset input:not([type="checkbox"]), .social-fieldset textarea, .social-fieldset select { width: 100%; min-height: 44px; }
+@media (min-width: 600px) { .social-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

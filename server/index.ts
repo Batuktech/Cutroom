@@ -16,6 +16,7 @@ import { providerDetails } from "../shared/ai-providers.js";
 import { suggestionOptionsSchema } from "../shared/suggestions.js";
 import { analyzeSuggestions, acceptSuggestions, qwenReadiness } from "./suggestions.js";
 import { latestExports } from "../shared/exports.js";
+import { publishingRouter, recoverPublications } from "./publishing.js";
 import {
   initialize,
   MEDIA,
@@ -58,6 +59,7 @@ import {
 
 await initialize();
 initializeJobs();
+await recoverPublications();
 const app = express();
 app.disable("x-powered-by");
 const port = Number(process.env.CUTROOM_PORT || 4318);
@@ -153,6 +155,7 @@ app.use("/api/projects/:id", (req, res, next) => {
   }
   next();
 });
+app.use("/api", publishingRouter);
 app.post("/api/import/youtube", (req, res) => {
   const { url, range, partMinutes, quality } = z.object({
     url: z.string().trim().min(1).max(2048),
@@ -631,9 +634,15 @@ app.get("/api/projects/:id/package", async (req, res, next) => {
   });
   await zip.finalize();
 });
-app.post("/api/jobs/:id/cancel", (req, res) =>
-  res.json(cancelJob(req.params.id)),
-);
+app.post("/api/jobs/:id/cancel", async (req, res) => {
+  const job = cancelJob(req.params.id);
+  const publicationId = (job.result as { publicationId?: string })?.publicationId;
+  if (job.kind === "publish" && job.projectId && publicationId) await updateProject(job.projectId, p => {
+    for (const c of p.publications?.find(r => r.id === publicationId)?.channels ?? [])
+      if (c.state === "pending") { c.state = "cancelled"; c.message = "Cancelled before submission."; }
+  });
+  res.json(job);
+});
 app.post("/api/models/:model/install", (req, res) => {
   const model = z.enum(["tiny", "base", "small", "large-v3"]).parse(req.params.model);
   res

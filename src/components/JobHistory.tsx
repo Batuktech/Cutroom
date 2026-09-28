@@ -9,6 +9,8 @@ const labels: Record<Job["kind"], string> = {
   model: "Model installation",
   preview: "Browser preview",
   suggest: "AI clip analysis",
+  "social-copy": "Social copy generation",
+  publish: "Postiz submission",
 };
 export function JobHistory({ jobs }: { jobs: Job[] }) {
   const finished = jobs
@@ -37,7 +39,7 @@ export function JobHistory({ jobs }: { jobs: Job[] }) {
               </strong>
               <p>
                 {job.status === "completed"
-                  ? "Finished on this computer"
+                  ? job.kind === "publish" ? "Accepted by Postiz. Check its calendar for publishing status." : "Finished processing"
                   : job.message}
               </p>
             </div>

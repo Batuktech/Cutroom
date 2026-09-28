@@ -12,6 +12,7 @@ import { Button } from "./ui/button";
 import { size } from "../lib/utils";
 import { AIProviderSettings } from "./AIProviderSettings";
 import { RestoreDialog } from "./RestoreDialog";
+import { PostizSettings } from "./PostizSettings";
 export function Settings({
   health,
   projects,
@@ -119,6 +120,7 @@ export function Settings({
         </p>
       </section>
       <AIProviderSettings />
+      <PostizSettings />
       <section className="settings-section">
         <div className="settings-heading">
           <HardDrive size={22} />
@@ -200,8 +202,9 @@ export function Settings({
           for useful or entertaining moments; fast rules use openings and pauses.
           Face assistance samples frames and suggests a
           fixed crop. Optional cloud analysis sends transcript text and timestamps
-          to your chosen API provider after confirmation. Audio and video stay local.
-          Cutroom does not publish or predict which clips will perform well.
+          to your chosen API provider after confirmation. Optional Postiz publishing
+          uploads a rendered clip and social copy after you confirm the selected channels.
+          Cutroom does not predict which clips will perform well.
         </p>
         <p>
           Review captions and the rendered file before delivery. Delete project

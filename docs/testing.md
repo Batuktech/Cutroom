@@ -35,6 +35,10 @@ Use the original synthetic demo, desktop and 320/390px views, keyboard focus, lo
 
 See [verification](verification.md) for release checks and their limits. Do not infer general transcription accuracy or viral potential from a passing integration test.
 
+## Postiz publishing
+
+`npm run test:postiz` uses isolated data and port 4334 with actual FFmpeg renders and a Postiz/cloud AI fixture that blocks external requests. It tests copy generation, upload/submission payloads, consent, partial success, duplicate handling, queued/running cancellation, stale edits, abrupt server crash recovery, backups and credential redaction. `npm run test:python` covers the social-copy worker with a mocked model, including context overflow, truncated output, invalid JSON and resource cleanup. No real posts, billed requests or GPU inference occur. See [publishing](publishing.md) for setup and limits.
+
 ## BYOK cloud review
 
 `npm run test:byok` starts an isolated server on port 4331 using synthetic demo media and a provider fixture that blocks all real network requests. It needs FFmpeg, but no cloud account, Python model, or GPU. It checks all 17 provider options through the real API/queue/store, consent, validation, cancellation, concurrent transcript edits, and credential redaction/restart. `npm test` also covers transport errors, budget limits, section coverage, and strict review filtering. Live provider calls are not part of automated tests and can incur charges.
