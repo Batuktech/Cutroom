@@ -1,5 +1,5 @@
 import path from "node:path";
-import { mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SocialAccounts, SocialError, socialAccounts } from "./social-accounts.js";
 import { tiktokChunks, uploadYoutube } from "./social-upload.js";
@@ -10,6 +10,8 @@ const env = { CUTROOM_PORT: "4318", YOUTUBE_CLIENT_ID: "synthetic-client-id", YO
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...headers } });
 async function scratch() {
+  // output/ is gitignored, so a fresh checkout does not have it yet.
+  await mkdir("output", { recursive: true });
   const folder = await mkdtemp(path.join("output", "social-test-"));
   return folder;
 }
