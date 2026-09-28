@@ -58,7 +58,7 @@
     "tsx": "^4.23.13",
     "typescript": "~6.0.2",
     "vite": "^8.2.2",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.2"
   },
   "description": "Local-first video clipping studio with AI highlight discovery, transcription, captions, and YouTube imports.",
   "license": "MIT",
