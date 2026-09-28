@@ -11,6 +11,8 @@ const labels: Record<Job["kind"], string> = {
   suggest: "AI clip analysis",
   "social-copy": "Social copy generation",
   publish: "Postiz submission",
+  stream: "Stream planning",
+  autopost: "Stream auto-publishing",
 };
 export function JobHistory({ jobs }: { jobs: Job[] }) {
   const finished = jobs

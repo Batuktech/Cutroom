@@ -43,6 +43,7 @@ export interface ExportFile {
 }
 export interface Project {
   publications?: import("./publishing.js").Publication[];
+  stream?: import("./streams.js").ProjectStream;
   suggestions?: import("./suggestions.js").SuggestionReview;
   id: string;
   name: string;
@@ -66,7 +67,7 @@ export interface Project {
   previewFile?: string;
 }
 export type JobKind =
-  "import" | "download" | "transcribe" | "export" | "reframe" | "model" | "preview" | "suggest" | "social-copy" | "publish";
+  "import" | "download" | "transcribe" | "export" | "reframe" | "model" | "preview" | "suggest" | "social-copy" | "publish" | "stream" | "autopost";
 export interface Job {
   id: string;
   label?: string;

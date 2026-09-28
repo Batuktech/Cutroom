@@ -13,6 +13,7 @@ import { size } from "../lib/utils";
 import { AIProviderSettings } from "./AIProviderSettings";
 import { RestoreDialog } from "./RestoreDialog";
 import { PostizSettings } from "./PostizSettings";
+import { SocialAccounts } from "./SocialAccounts";
 export function Settings({
   health,
   projects,
@@ -120,6 +121,7 @@ export function Settings({
         </p>
       </section>
       <AIProviderSettings />
+      <SocialAccounts />
       <PostizSettings />
       <section className="settings-section">
         <div className="settings-heading">

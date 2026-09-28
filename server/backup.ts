@@ -4,6 +4,7 @@ import { z } from "zod";
 import { clipSchema, segmentSchema } from "./domain.js";
 import { suggestionReviewSchema } from "../shared/suggestions.js";
 import { publicationSchema, savedSocialCopySchema } from "../shared/publishing.js";
+import { projectStreamSchema } from "../shared/streams.js";
 import { EXPORTS, MEDIA, listProjects, restoreProjects } from "./store.js";
 import type { Project, RestoreSummary } from "../shared/types.js";
 
@@ -67,6 +68,7 @@ const projectSchema = z
     demo: z.boolean(),
     suggestions: suggestionReviewSchema.optional(),
     publications: z.array(publicationSchema).max(500).optional(),
+    stream: projectStreamSchema.optional(),
     previewFile: assetName.optional(),
   })
   .refine(

@@ -27,6 +27,20 @@ def validate_source(info, start=None, end=None):
         return 'The video exceeds the 2 GB import limit. Choose a shorter range or lower quality.'
 
 
+def describe(url, node):
+    import yt_dlp
+    options = {'noplaylist': True, 'quiet': True, 'no_warnings': True, 'cachedir': False, 'socket_timeout': 20,
+               'js_runtimes': {'node': {'path': node}}, 'remote_components': set(), 'skip_download': True}
+    with yt_dlp.YoutubeDL(options) as downloader:
+        info = downloader.extract_info(url, download=False)
+    if info.get('is_live') or info.get('live_status') in ['is_live', 'is_upcoming', 'post_live']:
+        raise ValueError('Wait until this livestream has finished processing on YouTube.')
+    duration = info.get('duration')
+    if not isinstance(duration, (int, float)) or not 1 <= duration <= 86400:
+        raise ValueError('The stream length could not be read, or it is longer than 24 hours.')
+    print(json.dumps({'info': {'duration': duration, 'title': info.get('title') or 'YouTube stream'}}, ensure_ascii=False), flush=True)
+
+
 def download(url, folder, node, start=None, end=None, quality=720):
     import yt_dlp
     from yt_dlp.utils import DownloadError
@@ -117,6 +131,7 @@ def download(url, folder, node, start=None, end=None, quality=720):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--check', action='store_true')
+    parser.add_argument('--info', action='store_true')
     parser.add_argument('--url')
     parser.add_argument('--folder')
     parser.add_argument('--node')
@@ -129,6 +144,8 @@ if __name__ == '__main__':
             import yt_dlp
             import yt_dlp_ejs
             print('ready')
+        elif args.info:
+            describe(args.url, args.node)
         else:
             if (args.start is None) != (args.end is None):
                 raise ValueError('Provide both the start and end of the range.')

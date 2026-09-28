@@ -20,6 +20,7 @@ Cutroom is a local-first video clipping studio with transcript editing, optional
 - **Frame and export.** 16:9, 9:16, 1:1, and 4:5; crop or fit; 720p/1080p H.264/AAC MP4, separate SRT, and delivery ZIPs. New clips default to **Highlight + 16:9**.
 - **Import finished YouTube replays.** Download a bounded range or split it into 15/30/60-minute projects. Each project stays independently editable.
 - **Keep control of files.** Local project storage, metadata backup/restore, cancellable jobs, transcript history, and confirmed project-file deletion.
+- **Stream autopilot.** Paste a finished YouTube VOD. Cutroom splits it into one-hour projects, transcribes each with Whisper large-v3, lets local Qwen pick the strongest moments, and renders the top clips as 9:16. It can also post them straight to YouTube Shorts and TikTok with your own developer apps. [Setup and limits](docs/stream-autopilot.md).
 - **Prepare social posts.** Generate descriptions and hashtags, then render and send a saved portrait clip to Postiz for YouTube, TikTok and Instagram drafts, schedules or immediate publishing. [Setup and limits](docs/publishing.md).
 
 ## Quick start

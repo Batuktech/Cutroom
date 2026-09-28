@@ -17,6 +17,9 @@ import { suggestionOptionsSchema } from "../shared/suggestions.js";
 import { analyzeSuggestions, acceptSuggestions, qwenReadiness } from "./suggestions.js";
 import { latestExports } from "../shared/exports.js";
 import { publishingRouter, recoverPublications } from "./publishing.js";
+import { cancelStream, createStream, initializeStreams, listStreams, retryStream } from "./streams.js";
+import { socialAccounts } from "./social-accounts.js";
+import { autopostPlatforms, streamRequestSchema } from "../shared/streams.js";
 import {
   initialize,
   MEDIA,
@@ -60,6 +63,8 @@ import {
 await initialize();
 initializeJobs();
 await recoverPublications();
+await initializeStreams();
+await socialAccounts.load();
 const app = express();
 app.disable("x-powered-by");
 const port = Number(process.env.CUTROOM_PORT || 4318);
@@ -179,6 +184,37 @@ app.post("/api/import/youtube", (req, res) => {
     part ? `YouTube ${sourceTime(part.start)}–${sourceTime(part.end)}` : undefined));
   res.status(202).json({ ...queued[0], queuedCount: queued.length });
 });
+const platformSchema = z.enum(autopostPlatforms);
+app.get("/api/social/accounts", (_req, res) => res.json(socialAccounts.status()));
+app.post("/api/social/:platform/connect", (req, res) => res.json(socialAccounts.connect(platformSchema.parse(req.params.platform))));
+app.put("/api/social/:platform/app", async (req, res) => res.json(await socialAccounts.setApp(platformSchema.parse(req.params.platform), req.body)));
+app.delete("/api/social/:platform/app", async (req, res) => res.json(await socialAccounts.forgetApp(platformSchema.parse(req.params.platform))));
+app.delete("/api/social/:platform", async (req, res) => res.json(await socialAccounts.forget(platformSchema.parse(req.params.platform))));
+// The platform redirects the browser here after consent; `state` binds it to a sign-in this server started.
+app.get("/api/social/:platform/callback", async (req, res) => {
+  let message = "Account connected. You can close this tab and return to Cutroom.";
+  try { await socialAccounts.callback(platformSchema.parse(req.params.platform), req.query); }
+  catch (error) { message = error instanceof z.ZodError ? "Unknown platform." : (error as Error).message; res.status(400); }
+  const text = message.replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+  res.setHeader("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'");
+  res.type("html").send(`<!doctype html><meta charset="utf-8"><title>Cutroom</title><body style="font:16px system-ui;padding:40px;background:#101210;color:#eef0e8"><p>${text}</p><p><a style="color:#d6f58a" href="/">Back to Cutroom</a></p></body>`);
+});
+app.get("/api/streams", (_req, res) => res.json(listStreams()));
+app.post("/api/streams", async (req, res) => {
+  const request = streamRequestSchema.parse(req.body);
+  try { youtubeUrl(request.url); } catch (error) { throw Object.assign(error as Error, { status: 400 }); }
+  const blockers = [
+    !ready.youtube || !ready.ffmpeg ? "YouTube import needs the local downloader and FFmpeg. Run npm run setup:ai, then restart Cutroom." : "",
+    !(await modelList()).find(m => m.id === "large-v3")?.installed ? "Install Whisper Large v3 in Settings first." : "",
+    !ready.qwen.ready ? ready.qwen.message : "",
+    ...request.platforms.map(platform => socialAccounts.status().find(a => a.platform === platform)?.connected ? ""
+      : `Connect ${platform === "youtube" ? "YouTube" : "TikTok"} in Settings, or untick it.`),
+  ].filter(Boolean);
+  if (blockers.length) { res.status(409).json({ error: blockers[0] }); return; }
+  res.status(202).json(await createStream(request));
+});
+app.post("/api/streams/:id/cancel", async (req, res) => res.json(await cancelStream(req.params.id)));
+app.post("/api/streams/:id/retry", async (req, res) => res.json(await retryStream(req.params.id)));
 app.delete("/api/projects/:id/files", async (req, res) => {
   z.object({ confirm: z.literal(true) }).parse(req.body);
   res.json(await deleteProject(req.params.id));

@@ -1,0 +1,44 @@
+.stream-start h2, .stream-list > h2 { font-size: 1.07rem; margin-bottom: 14px; }
+.stream-checks { display: flex; flex-wrap: wrap; gap: 8px 20px; list-style: none; padding: 0; margin: 0 0 6px; font-size: .8rem; }
+.stream-checks li { display: flex; align-items: center; gap: 7px; color: var(--muted); }
+.stream-checks li.ok svg { color: var(--accent); }
+.stream-checks li.missing { color: var(--danger); }
+.stream-form { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 20px; }
+.stream-form > .button { justify-self: start; margin-top: 8px; }
+.text-link { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font: inherit; text-align: left; overflow-wrap: anywhere; }
+.text-link:focus-visible, .stream-clip a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.stream-list { margin-bottom: 32px; }
+.stream-card { border-top: 1px solid var(--line); padding: 20px 0; overflow-wrap: anywhere; }
+.stream-card header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.stream-card h3 { font-size: .95rem; line-height: 1.5; }
+.stream-card header p, .stream-message, .part-time, .stream-clip small { color: var(--muted); font-size: .78rem; line-height: 1.7; }
+.stream-status { display: inline-flex; align-items: center; gap: 6px; flex: none; font-size: .74rem; padding: 3px 10px; border: 1px solid var(--line); border-radius: 6px; text-transform: capitalize; }
+.stream-status.status-completed { color: var(--accent); border-color: #5f6f45; }
+.stream-status.status-failed { color: var(--danger); border-color: #7a4b43; }
+.stream-message { margin-top: 6px; }
+.stream-parts { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; }
+.stream-parts li { display: grid; grid-template-columns: 18px minmax(0, 1fr); column-gap: 10px; align-items: start; font-size: .8rem; line-height: 1.6; }
+.stream-parts li > :not(svg) { grid-column: 2; }
+.stream-parts li > svg { margin-top: 3px; color: var(--muted); }
+.stream-parts .part-ready > svg { color: var(--accent); }
+.stream-parts .part-failed > svg, .stream-parts .part-failed > span:last-of-type { color: var(--danger); }
+.stream-clips { margin-top: 18px; display: grid; gap: 12px; }
+.stream-clips h4 { font-size: .8rem; color: var(--muted); font-weight: 600; }
+.stream-clip { display: grid; gap: 3px; font-size: .82rem; line-height: 1.6; }
+.stream-clip a { color: var(--accent); display: inline-flex; align-items: center; gap: 4px; }
+.post-state { font-size: .78rem; }
+.post-failed, .post-unknown { color: var(--danger); }
+.post-submitted { color: var(--text); }
+.stream-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+.stream-actions .suggestion-note { margin: 0; }
+@media (min-width: 720px) {
+  .stream-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stream-form .stream-url, .stream-form .stream-platforms, .stream-form > .error-message, .stream-form > .button { grid-column: 1 / -1; }
+  .stream-parts li { grid-template-columns: 18px minmax(160px, auto) minmax(0, 1fr) auto; }
+  .stream-parts li > :not(svg) { grid-column: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .stream-card .spin, .stream-checks .spin { animation: none; } }
+.social-account-title { font-size: .95rem; margin-bottom: 4px; }
+.social-app-form .field-label { margin: 8px 0; }
+.social-setup-steps { margin: 4px 0 12px; padding-left: 20px; color: var(--muted); font-size: .8rem; line-height: 1.8; }
+.social-channel .suggestion-note svg { vertical-align: -2px; color: var(--accent); }
