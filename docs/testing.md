@@ -15,6 +15,8 @@ npm run build
 
 TypeScript tests use Vitest. Python tests use Python 3's standard library, mock inference where needed, and require no model downloads or GPU. The documentation check verifies relative file links, not external URLs or heading anchors. CI runs these checks on Ubuntu with Node 22 and 24, plus an isolated caption-render job.
 
+Clip-quality tests share synthetic scoring fixtures between TypeScript and Python. They cover emotion evidence, late hooks, missing payoffs, quiet useful moments, invalid refinements, oversampled reviews, global ranking and autopilot eligibility. They test the ranking rules and mocked model contracts, not whether a real model selects good moments. Evaluate that separately on recordings with human-labeled desired moments; record shortlist precision, missed moments, boundary quality and accepted-clip rate. Never infer viral probability from a passing fixture.
+
 ## Optional suites
 
 | Command | Prerequisites and scope |

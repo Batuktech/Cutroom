@@ -28,9 +28,32 @@ The selected count is an upper bound, not a quota. Short or unclear transcripts 
 
 The worker loads the model once and reads the entire transcript in sections bounded by the 2,048-token context, with approximately 25% overlap. Each section can propose up to three continuous passages. The request combines all selected interests with ANY-match semantics and optional custom guidance. The model can return no proposals from a section.
 
-Proposals must use valid source segment indexes. The worker copies evidence directly from the corresponding transcript rather than requiring the model to reproduce a quote exactly. Whole trailing segments can be removed to respect the maximum; such candidates carry an ending-check warning. Deterministic filters require at least four words, duration within the configured minimum and maximum, and no internal pause above the configured limit (15 seconds by default). Overlapping and near-duplicate proposals are removed. Editorial strength ranks the remaining passages without preferring durations near the maximum.
+Proposals must use valid source segment indexes. The worker copies evidence directly from the corresponding transcript rather than requiring the model to reproduce a quote exactly. Overlong proposals are rejected instead of dropping the ending to fit. Deterministic filters require at least four words, duration within the configured minimum and maximum, and no internal pause above the configured limit (15 seconds by default). Overlapping and near-duplicate proposals are removed. Discovery ranks passages by a coarse 1–3 editorial strength without preferring durations near the maximum.
 
-Discovery saves its shortlist directly. Reviewed and Strict add the second pass described above. The final API independently validates source bounds, duration, pauses, evidence, and duplicate ranges before saving. Selection details show proposed, invalid, duplicate, rejected, and empty-section counts with available rejection reasons. These counts explain filtering; they do not predict audience performance.
+Discovery saves its shortlist directly. Reviewed and Strict examine up to three times the requested count before selecting the final shortlist, so a later stronger candidate can replace an early plausible one. Cloud requests remain subject to the existing per-run cap. The final API independently validates source bounds, duration, pauses, evidence, and duplicate ranges before saving. Selection details show proposed, invalid, duplicate, rejected, and empty-section counts with available rejection reasons. These counts explain filtering; they do not predict audience performance.
+
+### Scoring and boundary review
+
+New Reviewed and Strict runs use a shared [editorial rubric](../shared/clip-rubric.json) in local Qwen and cloud review. Discovery stays a cheaper single pass, but uses the same guidance about concrete moments, emotional changes and complete payoffs.
+
+| Dimension | Weight | What the reviewer looks for |
+| --- | --- | --- |
+| Hook | 25% | An opening that gives the viewer an immediate reason to watch. |
+| Payoff | 25% | The answer, reveal, punchline or resolved point actually appears. |
+| Clarity | 20% | The passage makes sense without unseen earlier footage. |
+| Novelty | 15% | A specific unexpected development, not a claim that nobody has said it before. |
+| Emotion | 10% | A change supported by preceding words and the moment itself, rather than intensity alone. |
+| Value | 5% | A concrete takeaway or memorable insight. |
+
+Each dimension uses 0 (absent), 1 (weak), 2 (clear), 3 (strong), or 4 (exceptional). The server calculates the weighted 0–100 editorial priority, capped at 49 if hook, payoff or clarity is below 2. These weights and the autopilot threshold are explicit product heuristics, not calibrated probabilities or evidence of improved view counts. A quiet explanation can rank well with emotion 0.
+
+The review supplies source indexes for the hook, peak, payoff and preceding emotional baseline. Cutroom copies the associated quotes and times from the transcript into `candidate.assessment.evidence`; the model cannot supply invented evidence text. Missing baseline or baseline after the peak removes the emotion score. Missing payoff removes its score. A hook starting more than five seconds into the clip is capped at 1, and more than five seconds of trailing material after the payoff caps payoff at 2. Evidence anchoring proves where the text came from, not that the model's interpretation is correct.
+
+The reviewer sees up to two neighboring segments on each side, subject to context limits. It can move the start/end to retain setup and finish the payoff, but must keep the original proposal's peak. Revised clips still have to pass duration and pause checks. If refinement or evidence is invalid, Reviewed keeps the original passage with a warning; Strict rejects it. No words or frames are synthesized. Trimming stays at transcript-segment boundaries.
+
+The API and metadata backups preserve `strength` and the optional versioned `assessment` for new reviews. Existing saved clips and reviews remain unchanged; older reviews do not receive invented scores. The current interface continues to show ordered findings, the reviewer's reason and weaknesses. Detailed numeric dimensions and evidence anchors are stored in metadata, not a new score dashboard. Re-run **Analyze transcript** in **Reviewed** or **Strict** mode to use the new scoring.
+
+This does not add audio-emotion recognition, face-expression analysis, visual-event detection or performance analytics. It does not reconstruct moments split across separate imported projects. A larger local review pool costs additional inference time; cloud review can hit the existing request cap sooner. Use a labeled set of your preferred moments to evaluate selection quality before relying on unattended output.
 
 Each completed section saves a partial review and updates job checkpoint metadata, which triggers a browser library refresh. Candidate IDs remain stable for matching time ranges within that review. Selection is disabled during processing so an evolving shortlist cannot change underneath acceptance. Stopping analysis preserves the latest saved findings, and those findings survive a server restart. A newly completed review replaces the previous review; this includes an empty final result. Empty early checkpoints do not erase an existing useful review.
 

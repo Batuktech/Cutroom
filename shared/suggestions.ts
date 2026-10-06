@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { cloudProviders } from "./ai-providers.js";
+import { assessmentSchema } from "./clip-quality.js";
 const interestSchema = z.enum(["interesting", "funny", "educational", "story", "surprising", "debate", "emotional", "reactions", "quotes"]);
 export const suggestionOptionsSchema = z.object({
   provider: z.enum(["local", ...cloudProviders]).default("local"),
@@ -30,6 +31,8 @@ export const suggestionSchema = z.object({
   weakness: z.string().max(500),
   quote: z.string().trim().min(1).max(300),
   verdict: z.enum(["suggested", "reviewed", "needs-review"]).optional(),
+  strength: z.number().int().min(1).max(3).optional(),
+  assessment: assessmentSchema.optional(),
 }).refine((c) => c.end > c.start);
 export const aiUsageSchema = z.object({
   provider: z.enum(cloudProviders), model: z.string().max(120),

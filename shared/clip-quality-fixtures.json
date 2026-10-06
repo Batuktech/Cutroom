@@ -1,0 +1,8 @@
+[
+  { "name": "quiet concrete insight", "scores": { "hook": 3, "payoff": 4, "clarity": 4, "novelty": 2, "emotion": 0, "value": 4 }, "anchors": { "hook": 0, "peak": 1, "payoff": 2, "contrast": -1 }, "total": 76 },
+  { "name": "intense reaction without resolution", "scores": { "hook": 4, "payoff": 0, "clarity": 1, "novelty": 1, "emotion": 4, "value": 0 }, "anchors": { "hook": 0, "peak": 1, "payoff": -1, "contrast": 0 }, "total": 44 },
+  { "name": "unsupported emotion is not evidence", "scores": { "hook": 3, "payoff": 4, "clarity": 4, "novelty": 2, "emotion": 4, "value": 4 }, "anchors": { "hook": 0, "peak": 1, "payoff": 2, "contrast": -1 }, "total": 76 },
+  { "name": "baseline must precede reaction", "scores": { "hook": 3, "payoff": 4, "clarity": 4, "novelty": 2, "emotion": 4, "value": 4 }, "anchors": { "hook": 0, "peak": 1, "payoff": 2, "contrast": 1 }, "total": 76 },
+  { "name": "late hook is penalized", "scores": { "hook": 4, "payoff": 4, "clarity": 4, "novelty": 4, "emotion": 4, "value": 4 }, "anchors": { "hook": 2, "peak": 2, "payoff": 2, "contrast": 0 }, "total": 49 },
+  { "name": "missing peak cannot support novelty or value", "scores": { "hook": 4, "payoff": 4, "clarity": 4, "novelty": 4, "emotion": 4, "value": 4 }, "anchors": { "hook": 0, "peak": -1, "payoff": 2, "contrast": -1 }, "total": 70 }
+]

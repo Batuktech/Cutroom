@@ -4,17 +4,17 @@ import type { SuggestionOptions } from "../shared/suggestion-options.js";
 import { providerDetails, type CloudProvider } from "../shared/ai-providers.js";
 import { proposalSchema, validateSuggestions } from "./suggestion-domain.js";
 import { requestAI, type AIRequest, type AIResponse } from "./ai-providers.js";
+import { editorialReviewFormat, rubric } from "../shared/clip-quality.js";
+import { editorialReviewSchema, groundAssessment, reviewContext } from "./clip-quality.js";
 
 type Proposal = z.infer<typeof proposalSchema>;
 const proposalInput = z.object({ first: z.number().int().nonnegative(), last: z.number().int().nonnegative(),
   title: z.string().trim().min(1).max(120), reason: z.string().trim().min(1).max(500),
   weakness: z.string().max(500), strength: z.number().int().min(1).max(3) });
 const candidatesSchema = z.object({ candidates: z.array(z.unknown()).max(20) });
-const verdictSchema = z.object({ context: z.boolean(), ending: z.boolean(), appeal: z.boolean(), clarity: z.boolean(), weakness: z.string().max(500) });
 const objectSchema = (properties: Record<string, unknown>) => ({ type: "object", properties, required: Object.keys(properties), additionalProperties: false });
-const string = { type: "string" }, integer = { type: "integer" }, boolean = { type: "boolean" };
+const string = { type: "string" }, integer = { type: "integer" };
 const discoveryFormat = objectSchema({ candidates: { type: "array", items: objectSchema({ first: integer, last: integer, title: string, reason: string, weakness: string, strength: integer }) } });
-const reviewFormat = objectSchema({ context: boolean, ending: boolean, appeal: boolean, clarity: boolean, weakness: string });
 
 // Bound each request, overlap by the longest eligible clip, and cover every segment.
 export function cloudSections(segments: Segment[], maxDuration: number) {
@@ -70,7 +70,7 @@ export async function analyzeCloud(input: {
     for (const section of sections) {
       if (usage.requests >= limit) break;
       input.progress(scanned / sections.length * 75, `${providerDetails[provider].name}: section ${scanned + 1}/${sections.length} · request ${usage.requests + 1}/${limit}`);
-      const raw = candidatesSchema.safeParse(await ask(`Find up to 5 distinct promising clips in this section. Return inclusive first/last segment indexes from this section. Strength is 1 (uncertain), 2 (promising), or 3 (strong). An empty array is valid.\nTRANSCRIPT:\n${transcript(section.first, section.last)}`, discoveryFormat));
+      const raw = candidatesSchema.safeParse(await ask(`Find up to 5 distinct promising clips in this section. Return inclusive first/last segment indexes from this section. Strength is 1 (uncertain), 2 (promising), or 3 (strong). An empty array is valid. ${rubric.discovery}\nTRANSCRIPT:\n${transcript(section.first, section.last)}`, discoveryFormat));
       if (!raw.success) throw new Error("The provider returned invalid clip proposals. Try another structured-output model.");
       if (!raw.data.candidates.length) diagnostics.emptySections++;
       for (const value of raw.data.candidates) {
@@ -97,20 +97,35 @@ export async function analyzeCloud(input: {
       await save();
     }
     if (options.strictness !== "discovery") {
-      for (const candidate of candidates.slice(0, options.count)) {
+      for (const candidate of candidates.slice(0, options.count * 3)) {
         if (usage.requests >= limit) break;
-        input.progress(75 + reviewed / Math.max(1, Math.min(candidates.length, options.count)) * 24, `Checking clip ${reviewed + 1} · request ${usage.requests + 1}/${limit}`);
-        const verdict = verdictSchema.safeParse(await ask(`Independently review this proposed clip. Judge context (understandable alone), ending (complete payoff), appeal (matches an interest), and clarity (speech text is understandable). Return booleans and a brief weakness, empty if none.\nTRANSCRIPT:\n${transcript(candidate.first, candidate.last)}`, reviewFormat));
+        input.progress(75 + reviewed / Math.max(1, Math.min(candidates.length, options.count * 3)) * 24, `Checking clip ${reviewed + 1} · request ${usage.requests + 1}/${limit}`);
+        const context = reviewContext(candidate.first, candidate.last, segments);
+        const verdict = editorialReviewSchema.safeParse(await ask(`Independently review this proposed clip. Original proposal [${candidate.first},${candidate.last}]. ${rubric.review}\nTRANSCRIPT:\n${transcript(context.first, context.last)}`, editorialReviewFormat));
         if (!verdict.success) throw new Error("The provider returned an invalid second review. Saved findings remain available.");
-        const v = verdict.data, passed = v.context && v.ending && v.appeal && v.clarity;
+        const v = verdict.data;
+        const peak = v.assessment.anchors.peak;
+        const inContext = v.first >= context.first && v.last <= context.last && v.last >= v.first && peak >= candidate.first && peak <= candidate.last;
+        const quote = inContext ? segments.slice(v.first, v.last + 1).map(s => s.text).join(" ").trim().slice(0, 280) : "";
+        const refined = { ...candidate, first: v.first, last: v.last, quote, assessment: v.assessment };
+        const valid = inContext && validateSuggestions([refined], segments, duration, options.maxDuration, 1, options.minDuration, options.maxPause).length > 0;
+        const grounded = valid ? groundAssessment(v.assessment, v.first, v.last, segments) : undefined;
+        const passed = !!grounded && v.context && v.ending && v.appeal && v.clarity;
+        if (grounded) {
+          if (!v.context || !v.clarity) grounded.scores.clarity = Math.min(grounded.scores.clarity, 1);
+          if (!v.ending) grounded.scores.payoff = Math.min(grounded.scores.payoff, 1);
+          Object.assign(candidate, refined, { reason: v.reason, assessment: { ...v.assessment, scores: grounded.scores } });
+        }
         candidate.verdict = passed ? "reviewed" : "needs-review";
-        candidate.weakness = v.weakness || (passed ? candidate.weakness : "One or more context, ending, appeal, or clarity checks did not pass.");
+        candidate.weakness = (!grounded ? "Boundary or evidence check failed; original range kept. " : "") +
+          (v.weakness || (passed ? candidate.weakness : "One or more context, ending, appeal, or clarity checks did not pass."));
+        candidate.weakness = candidate.weakness.slice(0, 500);
         if (!passed && options.strictness === "strict") diagnostics.rejected++;
         reviewed++;
         await save();
       }
     }
-    const complete = scanned === sections.length && (options.strictness === "discovery" || reviewed >= Math.min(candidates.length, options.count));
+    const complete = scanned === sections.length && (options.strictness === "discovery" || reviewed >= Math.min(candidates.length, options.count * 3));
     usage.limitReached = !complete && usage.requests >= limit;
     if (usage.limitReached) diagnostics.reasons["Request cap reached; some sections or second reviews remain"] = 1;
     await save(true, complete);

@@ -12,8 +12,12 @@ globalThis.fetch = async (url, init) => {
   if (body.model === "test-failure") return new Response("sk-synthetic-secret", { status: 429 });
   const text = (body.input ?? body.messages).at(-1).content;
   const transcript = JSON.parse(text.split("TRANSCRIPT:\n")[1]);
+  const original = text.match(/Original proposal \[(\d+),(\d+)\]/);
+  const first = original ? Number(original[1]) : transcript[0].index;
+  const last = original ? Number(original[2]) : transcript[Math.min(2, transcript.length - 1)].index;
   const output = text.startsWith("Independently")
-    ? { context: true, ending: true, appeal: true, clarity: true, weakness: "" }
+    ? { first, last, context: true, ending: true, appeal: true, clarity: true, reason: "A complete synthetic thought.", weakness: "",
+        assessment: { scores: { hook: 3, payoff: 3, clarity: 3, novelty: 2, emotion: 0, value: 3 }, anchors: { hook: first, peak: first, payoff: last, contrast: -1 } } }
     : { candidates: [{ first: transcript[0].index, last: transcript[Math.min(2, transcript.length - 1)].index, title: "A useful idea", reason: "A complete synthetic thought.", weakness: "Check the video.", strength: 3 }] };
   if (endpoint.includes("anthropic")) return Response.json({ stop_reason: "end_turn", content: [{ type: "text", text: JSON.stringify(output) }], usage: { input_tokens: 100, output_tokens: 30 } });
   if (!endpoint.includes("api.openai.com")) return Response.json({ choices: [{ finish_reason: "stop", message: { content: JSON.stringify(output) } }], usage: { prompt_tokens: 100, completion_tokens: 30 } });

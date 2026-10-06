@@ -4,7 +4,8 @@ import { defaultSuggestionOptions } from "../shared/suggestion-options.js";
 import { recognitionResultSchema } from "./suggestion-domain.js";
 const segments = Array.from({ length: 240 }, (_, i) => ({ id: `segment-${i}`, start: i * 5, end: i * 5 + 4, text: `This is a complete synthetic passage number ${i} about an unexpected conversation.` }));
 const proposal = { first: 0, last: 2, title: "An unexpected conversation", reason: "A self-contained moment", weakness: "", strength: 3 };
-const verdict = { context: true, ending: true, appeal: true, clarity: true, weakness: "" };
+const verdict = { first: 0, last: 2, context: true, ending: true, appeal: true, clarity: true, reason: "The reply resolves the opening question.", weakness: "",
+  assessment: { scores: { hook: 3, payoff: 3, clarity: 3, novelty: 2, emotion: 0, value: 3 }, anchors: { hook: 0, peak: 1, payoff: 2, contrast: -1 } } };
 const options = { ...defaultSuggestionOptions, provider: "openai" as const, model: "test-model", maxRequests: 20 };
 const response = (data: unknown) => ({ data, inputTokens: 100, outputTokens: 20 });
 
@@ -63,5 +64,32 @@ describe("cloud clip analysis", () => {
     const ask = vi.fn(), checkpoint = vi.fn();
     await expect(analyzeCloud({ segments, duration: 1200, options, apiKey: "synthetic", signal: controller.signal, progress: vi.fn(), checkpoint, ask })).rejects.toThrow();
     expect(ask).not.toHaveBeenCalled(); expect(checkpoint).not.toHaveBeenCalled();
+  });
+  it("repairs boundaries with grounded context and preserves the original peak", async () => {
+    const checkpoint = vi.fn();
+    const ask = vi.fn().mockResolvedValueOnce(response({ candidates: [{ ...proposal, first: 1 }] })).mockResolvedValueOnce(response(verdict));
+    await analyzeCloud({ segments: segments.slice(0, 30), duration: 150, options: { ...options, strictness: "reviewed" }, apiKey: "synthetic", progress: vi.fn(), checkpoint, ask });
+    const c = checkpoint.mock.calls.at(-1)![0].candidates[0];
+    expect(c.first).toBe(0); expect(c.verdict).toBe("reviewed"); expect(c.assessment.scores.payoff).toBe(3);
+    expect(ask.mock.calls[1][0].input).toContain("Original proposal [1,2]");
+  });
+  it("keeps original boundaries when the model relocates to a different moment", async () => {
+    const checkpoint = vi.fn();
+    const ask = vi.fn().mockResolvedValueOnce(response({ candidates: [proposal] })).mockResolvedValueOnce(response({ ...verdict, first: 3, last: 4,
+      assessment: { ...verdict.assessment, anchors: { hook: 3, peak: 3, payoff: 4, contrast: -1 } } }));
+    await analyzeCloud({ segments: segments.slice(0, 30), duration: 150, options: { ...options, strictness: "reviewed" }, apiKey: "synthetic", progress: vi.fn(), checkpoint, ask });
+    const c = checkpoint.mock.calls.at(-1)![0].candidates[0];
+    expect(c.first).toBe(0); expect(c.last).toBe(2); expect(c.verdict).toBe("needs-review"); expect(c.assessment).toBeUndefined();
+  });
+  it("reviews beyond the requested count so a later stronger moment can win", async () => {
+    const checkpoint = vi.fn();
+    const later = { ...proposal, first: 5, last: 7, strength: 2 };
+    const ask = vi.fn().mockResolvedValueOnce(response({ candidates: [proposal, later] }))
+      .mockResolvedValueOnce(response({ ...verdict, ending: false }))
+      .mockResolvedValueOnce(response({ ...verdict, first: 5, last: 7, assessment: { ...verdict.assessment, anchors: { hook: 5, peak: 6, payoff: 7, contrast: -1 } } }));
+    await analyzeCloud({ segments: segments.slice(0, 30), duration: 150, options: { ...options, count: 1, strictness: "reviewed" }, apiKey: "synthetic", progress: vi.fn(), checkpoint, ask });
+    expect(ask).toHaveBeenCalledTimes(3);
+    expect(checkpoint.mock.calls.at(-1)![0].reviewed).toBe(2);
+    expect(checkpoint.mock.calls.at(-1)![0].complete).toBe(true);
   });
 });
