@@ -6,6 +6,7 @@ import { EXPORTS, ROOT, getProject, updateProject } from "./store.js";
 import { exportClip, reframeClip, transcribeProject, PYTHON } from "./media.js";
 import { importYoutube } from "./youtube.js";
 import { analyzeSuggestions } from "./suggestions.js";
+import { transcriptHash } from "./suggestion-domain.js";
 import { clipSourceHash, generateCopy } from "./social-copy.js";
 import { SocialError } from "./social-accounts.js";
 import { uploadTiktok, uploadYoutube, type UploadMeta } from "./social-upload.js";
@@ -13,6 +14,7 @@ import { clipSchema } from "./domain.js";
 import { youtubeUrl } from "../shared/youtube.js";
 import { suggestionOptionsSchema } from "../shared/suggestions.js";
 import { copyOptionsSchema } from "../shared/publishing.js";
+import { autopilotEligible } from "../shared/clip-quality.js";
 import { rankCandidates, streamParts, type AutopostClip, type AutopostPlatform, type StreamPart, type StreamRecord, type StreamRequest } from "../shared/streams.js";
 
 const FILE = path.join(ROOT, "streams.json");
@@ -189,12 +191,15 @@ async function publishClips(id: string, context: JobContext) {
   if (needed > 0) {
     const pool = stream.parts.filter(p => p.stage === "ready" && p.projectId).flatMap(part => {
       const project = getProject(part.projectId!);
-      return (project.suggestions?.candidates ?? []).map((candidate, order) => ({ ...candidate, part: part.index, order, projectId: project.id }));
+      if (!project.suggestions || project.suggestions.sourceHash !== transcriptHash(project)) return [];
+      return project.suggestions.candidates.filter(autopilotEligible).map((candidate, order) => ({ ...candidate, part: part.index, order, projectId: project.id, sourceHash: project.suggestions!.sourceHash }));
     }).filter(c => !stream.clips.some(clip => clip.projectId === c.projectId && Math.abs(clip.start - c.start) < .1));
     for (const candidate of rankCandidates(pool, needed)) {
       const clip = pickedClip(candidate.start, candidate.end, candidate.title);
       const clipId = randomUUID();
       await updateProject(candidate.projectId, p => {
+        context.signal?.throwIfAborted();
+        if (transcriptHash(p) !== candidate.sourceHash) throw new Error("The transcript changed after review. Analyze the part again before selecting clips.");
         p.clips.push({ ...clip, id: clipId, status: "draft", createdAt: new Date().toISOString(), reason: candidate.reason });
       });
       await change(id, s => s.clips.push({ id: randomUUID(), projectId: candidate.projectId, clipId, part: candidate.part,
@@ -258,7 +263,7 @@ async function publishClips(id: string, context: JobContext) {
   const posted = targets.filter(t => t.state === "submitted").length, attention = targets.length - posted;
   await change(id, s => {
     s.status = "completed";
-    s.message = !final.clips.length ? "Qwen found no clip candidates in this stream."
+    s.message = !final.clips.length ? "No reviewed clips met the quality threshold. Open the part projects to inspect suggestions; nothing was posted."
       : `${final.clips.length} clip${final.clips.length === 1 ? "" : "s"} ready` +
         (targets.length ? ` · ${posted} post${posted === 1 ? "" : "s"} published${attention ? ` · ${attention} need attention` : ""}` : "") +
         (s.parts.some(p => p.stage !== "ready") ? " · some parts failed" : "");

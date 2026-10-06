@@ -53,7 +53,14 @@ try {
     assert.equal(review.usage.provider, provider); assert.ok(review.candidates.length); assert.equal(review.complete, true);
   }
   check("All 17 provider options complete the real API → queue → persisted review flow without Qwen or cloud traffic");
+  const scored = await wait(await request(route, "POST", { ...options, strictness: "reviewed" }, 202));
+  assert.equal(scored.status, "completed");
   const cloudReview = (await request(`/projects/${project.id}`)).suggestions;
+  assert.equal(cloudReview.candidates[0].assessment.source, "transcript");
+  assert.equal(cloudReview.candidates[0].assessment.version, 1);
+  assert.ok(cloudReview.candidates[0].assessment.evidence.some(e => e.role === "peak"));
+  assert.ok(cloudReview.candidates[0].assessment.total >= 60);
+  check("Reviewed copy preserves scored source evidence through the API and project store");
   const selected = { reviewId: cloudReview.id, ids: [cloudReview.candidates[0].id] };
   const accepted = await request(`/projects/${project.id}/suggestions/accept`, "POST", selected);
   assert.equal(accepted.added, 1);
@@ -61,6 +68,7 @@ try {
   assert.equal(accepted.project.clips.at(-1).aspect, "16:9");
   assert.equal((await request(`/projects/${project.id}/suggestions/accept`, "POST", selected)).added, 0);
   const backup = await request("/backup");
+  assert.ok(JSON.stringify(backup).includes('"assessment"'));
   await request("/backup/restore", "POST", { backup, preview: true });
   check("Cloud candidates accept idempotently with existing defaults and backup validation");
   await request(route, "POST", { ...options, cloudConsent: false }, 400);

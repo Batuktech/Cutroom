@@ -1,4 +1,5 @@
 import re
+from clip_quality import quality
 
 
 def normalize(text):
@@ -36,17 +37,15 @@ def ground(candidate, segments, start, end, maximum):
     first, last = candidate['first'], candidate['last']
     if not start <= first <= last < end:
         return None
-    trimmed = False
-    while last > first and segments[last]['end'] - segments[first]['start'] > maximum:
-        last -= 1
-        trimmed = True
+    if segments[last]['end'] - segments[first]['start'] > maximum:
+        return None
     candidate = {**candidate, 'last': last}
     text = ' '.join(s['text'] for s in segments[first:last+1])
     # Evidence is copied from the selected source, so model paraphrasing cannot invalidate a useful range.
     candidate['quote'] = text[:240].rsplit(' ', 1)[0] if len(text) > 240 else text
     candidate['title'] = candidate['title'].strip()[:120] or 'Passage to review'
     candidate['reason'] = candidate['reason'].strip()[:500] or 'Selected for a manual preview.'
-    candidate['weakness'] = (('Trimmed to your maximum length; check the ending. ' if trimmed else '') + candidate['weakness'])[:500]
+    candidate['weakness'] = candidate['weakness'][:500]
     candidate['verdict'] = 'suggested'
     return candidate
 
@@ -59,7 +58,8 @@ def overlap(a, b, segments):
 
 def shortlist(candidates, segments, target, limit=10):
     chosen = []
-    candidates = sorted(candidates, key=lambda c: (-c['strength'], segments[c['first']]['start']))
+    tier = {'reviewed': 2, 'suggested': 1, 'needs-review': 0}
+    candidates = sorted(candidates, key=lambda c: (-tier.get(c.get('verdict', 'suggested'), 1), -quality(c, segments), segments[c['first']]['start']))
     for candidate in candidates:
         words = set(re.findall(r'\w+', candidate['quote'].lower()))
         duplicate = False

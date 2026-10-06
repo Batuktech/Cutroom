@@ -33,11 +33,10 @@ class SuggestionLogicTest(unittest.TestCase):
         self.assertFalse(valid(self.candidate, self.segments, 20))
         self.assertEqual(rejection(self.candidate, self.segments, 20), 'Outside duration limits')
 
-    def test_oversized_proposal_snaps_to_a_source_boundary_and_copies_evidence(self):
+    def test_oversized_proposal_cannot_silently_lose_its_payoff(self):
         candidate = {**self.candidate, 'last': 15, 'title': 'A test title', 'reason': 'An example', 'weakness': ''}
-        selected = ground(candidate, self.segments, 0, 40, 20)
-        self.assertEqual(selected['last'], 3)
-        self.assertIn('Trimmed', selected['weakness'])
+        self.assertIsNone(ground(candidate, self.segments, 0, 40, 20))
+        selected = ground({**candidate, 'last': 3}, self.segments, 0, 40, 20)
         self.assertIn(selected['quote'], ' '.join(s['text'] for s in self.segments[:4]))
         self.assertTrue(valid(selected, self.segments, 20))
         self.assertIsNone(ground(candidate, self.segments, 20, 40, 100))

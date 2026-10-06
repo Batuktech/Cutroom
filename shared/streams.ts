@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { qualityValue, type Assessment } from "./clip-quality.js";
 
 export const autopostPlatforms = ["youtube", "tiktok"] as const;
 export type AutopostPlatform = typeof autopostPlatforms[number];
@@ -92,14 +93,31 @@ export function streamParts(duration: number) {
   return parts;
 }
 
-type Ranked = { part: number; order: number; verdict?: "suggested" | "reviewed" | "needs-review" };
+type Ranked = { part: number; order: number; verdict?: "suggested" | "reviewed" | "needs-review"; assessment?: Assessment; strength?: number; quote?: string };
 const verdictRank = { reviewed: 0, suggested: 1, "needs-review": 2 } as const;
 /**
- * Qwen returns no numeric score, so ranking prefers second-pass "reviewed" verdicts
- * and then alternates between parts, spreading picks across the whole stream.
+ * Scored reviews compete across the whole stream. Legacy reviews keep their original
+ * round-robin ordering; scores are never invented for older saved results.
  */
 export function rankCandidates<T extends Ranked>(candidates: T[], limit: number): T[] {
+  if (limit <= 0) return [];
   const rank = (c: T) => verdictRank[c.verdict ?? "suggested"];
+  if (candidates.some(c => c.assessment)) {
+    const sorted = candidates.toSorted((a, b) => rank(a) - rank(b) || qualityValue(b) - qualityValue(a) || a.order - b.order || a.part - b.part);
+    const chosen: T[] = [];
+    const words = (s: string) => new Set(s.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []);
+    for (const c of sorted) {
+      const a = words(c.quote ?? "");
+      if (a.size >= 5 && chosen.some(p => {
+        const b = words(p.quote ?? ""), intersection = [...a].filter(w => b.has(w)).length;
+        return (c.quote ?? "").trim().toLocaleLowerCase() === (p.quote ?? "").trim().toLocaleLowerCase() ||
+          (Math.min(a.size, b.size) >= 12 && intersection / new Set([...a, ...b]).size > .9);
+      })) continue;
+      chosen.push(c);
+      if (chosen.length >= limit) break;
+    }
+    return chosen;
+  }
   const sorted = candidates.toSorted((a, b) => rank(a) - rank(b) || a.order - b.order || a.part - b.part);
   const chosen: T[] = [];
   for (const tier of [0, 1, 2]) {

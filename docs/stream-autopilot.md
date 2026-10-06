@@ -5,7 +5,7 @@ Stream autopilot turns a finished YouTube VOD into short vertical clips with no 
 1. Cutroom reads the stream length and splits it into one-hour parts. Each part becomes its own project named `… · Part N/M`.
 2. Each part is transcribed with Whisper large-v3 on this computer.
 3. Local Qwen3-8B reviews each transcript in Reviewed mode and proposes 15–60 second moments.
-4. Across the whole stream, Cutroom picks the top clips you asked for. Candidates confirmed by the second review come first, and picks alternate between parts.
+4. Across the whole stream, Cutroom ranks the reviewed candidates by their evidence-backed editorial score. Only candidates scoring at least 60/100 with clear hooks, payoffs and standalone clarity qualify. It can return fewer clips than requested, including zero; it does not fill missing slots with uncertain passages or weaker parts. Repeated wording across parts is filtered.
 5. Each pick becomes a 9:16 clip with face framing and burned-in captions. Local Qwen writes a title and description. The clip is rendered at 1080×1920 and, if you opted in, uploaded directly to YouTube Shorts and TikTok.
 
 Open **Streams** in the sidebar to start a run and follow its parts, clips, and post links.
@@ -49,3 +49,5 @@ Before each upload, Cutroom records the intent. If the platform refuses before a
 If Cutroom stops mid-run, unfinished parts are marked failed. Retry continues from the last finished stage (download, transcription, or review) instead of starting over. Cancelling a stream stops queued work. Posts that were already published stay on the platforms.
 
 AI picks are editorial suggestions, not a guarantee of views. Review what was published.
+
+The [scoring rubric](ai-suggestions.md#scoring-and-boundary-review) evaluates transcript text, not faces, vocal emotion or view predictions. Stream autopilot still uses local Qwen. Existing saved clips are preserved. Old unscored reviews do not qualify for newly selected autopilot clips; analyze the part again to obtain a scored review. A transcript edit also invalidates selection from its previous review. The threshold is a product heuristic that needs evaluation against your own editorial preferences, not a measured success rate.

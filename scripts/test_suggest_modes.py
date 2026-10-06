@@ -1,6 +1,7 @@
 import contextlib
 import io
 import json
+import re
 import tempfile
 import types
 import unittest
@@ -22,8 +23,11 @@ class FakeModel:
     def __call__(self, prompt, **kwargs):
         self.prompts.append(prompt)
         if 'Review this passage' in prompt:
-            data = {'standalone': False, 'complete': False, 'interesting': True, 'faithful': True,
-                    'reason': 'An amusing comeback worth previewing.', 'weakness': 'Needs the earlier setup.'}
+            first, last = map(int, re.search(r'Original proposal \[(\d+),(\d+)\]', prompt).groups())
+            data = {'first': first, 'last': last, 'context': False, 'ending': False, 'appeal': True, 'clarity': True,
+                    'reason': 'An amusing comeback worth previewing.', 'weakness': 'Needs the earlier setup.',
+                    'assessment': {'scores': {'hook': 2, 'payoff': 2, 'clarity': 2, 'novelty': 2, 'emotion': 2, 'value': 1},
+                                   'anchors': {'hook': first, 'peak': first, 'payoff': last, 'contrast': -1}}}
         else:
             data = {'candidates': [{'first': i, 'last': i, 'title': f'Moment {i}',
                     'reason': 'A specific exchange worth watching.', 'weakness': 'Check the delivery.', 'strength': 2} for i in range(2)]}
@@ -34,13 +38,13 @@ class FakeModel:
 
 
 class ReviewModesTest(unittest.TestCase):
-    def run_mode(self, mode):
+    def run_mode(self, mode, count=25):
         FakeModel.prompts = []
         FakeModel.closed = False
         with tempfile.TemporaryDirectory() as folder:
             folder = Path(folder)
             data = {'segments': [{'start': i*30, 'end': i*30+20, 'text': ['He lost the bet and challenged his friend to double the stakes.', 'She answered the awkward question with a perfectly timed sarcastic comeback.'][i]} for i in range(2)],
-                    'maxDuration': 100, 'interests': ['funny', 'reactions'], 'guidance': 'Focus on awkward comebacks.', 'strictness': mode}
+                    'maxDuration': 100, 'interests': ['funny', 'reactions'], 'guidance': 'Focus on awkward comebacks.', 'strictness': mode, 'count': count}
             (folder/'input.json').write_text(json.dumps(data))
             runtime = types.SimpleNamespace(Llama=FakeModel, LlamaGrammar=types.SimpleNamespace(from_json_schema=lambda *a, **k: None))
             output = io.StringIO()
@@ -74,6 +78,45 @@ class ReviewModesTest(unittest.TestCase):
         self.assertEqual(result['diagnostics']['rejected'], 2)
         self.assertEqual(result['diagnostics']['reasons']['Needs earlier context'], 2)
         self.assertTrue(all(c['candidates'] == [] for c in checkpoints))
+
+    def test_review_does_not_stop_at_the_first_acceptable_candidate(self):
+        original = FakeModel.__call__
+
+        def scored(model, prompt, **kwargs):
+            response = original(model, prompt, **kwargs)
+            if 'Review this passage' in prompt:
+                data = json.loads(response['choices'][0]['text'])
+                data.update(context=True, ending=True, appeal=True, clarity=True)
+                value = 4 if data['first'] == 1 else 1
+                data['assessment']['scores'] = {k: value for k in data['assessment']['scores']}
+                response['choices'][0]['text'] = json.dumps(data)
+            return response
+
+        with patch.object(FakeModel, '__call__', scored):
+            result, _ = self.run_mode('reviewed', count=1)
+        self.assertEqual(result['reviewed'], 2)
+        self.assertEqual(len(result['candidates']), 1)
+        self.assertEqual(result['candidates'][0]['first'], 1)
+
+    def test_invalid_boundary_review_never_relocates_a_moment(self):
+        original = FakeModel.__call__
+
+        def relocated(model, prompt, **kwargs):
+            response = original(model, prompt, **kwargs)
+            if 'Original proposal [0,0]' in prompt:
+                data = json.loads(response['choices'][0]['text'])
+                data.update(first=1, last=1, context=True, ending=True, appeal=True, clarity=True)
+                data['assessment']['anchors'].update(hook=1, peak=1, payoff=1)
+                response['choices'][0]['text'] = json.dumps(data)
+            return response
+
+        with patch.object(FakeModel, '__call__', relocated):
+            result, _ = self.run_mode('reviewed')
+        retained = next(c for c in result['candidates'] if c['first'] == 0)
+        self.assertEqual(retained['last'], 0)
+        self.assertEqual(retained['verdict'], 'needs-review')
+        self.assertIn('original range kept', retained['weakness'])
+        self.assertNotIn('assessment', retained)
 
 
 if __name__ == '__main__':
