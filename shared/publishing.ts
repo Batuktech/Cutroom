@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { cloudProviders } from "./ai-providers.js";
+import { cloudProviders, schemaOnlyProviders } from "./ai-providers.js";
 
 export const socialPlatforms = ["youtube", "instagram", "tiktok"] as const;
 export type SocialPlatform = typeof socialPlatforms[number];
@@ -24,7 +24,7 @@ export const copyOptionsSchema = z.object({
   language: z.string().trim().min(1).max(60).default("Same language as the transcript"),
   sourceHash: hashSchema,
   cloudConsent: z.boolean().default(false), cloudDestination: z.string().max(2048).optional(),
-}).refine(o => !["openai", "anthropic"].includes(o.provider) || o.outputFormat !== "json_object", "This provider requires JSON schema output.");
+}).refine(o => !schemaOnlyProviders.includes(o.provider) || o.outputFormat !== "json_object", "This provider requires JSON schema output.");
 export type CopyOptions = z.infer<typeof copyOptionsSchema>;
 export const channelSettingsSchema = z.discriminatedUnion("__type", [
   z.object({ __type: z.literal("youtube"), type: z.enum(["public", "private", "unlisted"]), selfDeclaredMadeForKids: z.enum(["yes", "no"]) }),

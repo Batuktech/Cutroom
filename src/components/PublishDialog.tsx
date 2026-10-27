@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Clip, Health, Job, Project } from "../../shared/types";
 import { socialPlatforms, socialCopySchema, postContent, initialChannelSettings, type ChannelSettings, type PostizChannel, type PostizStatus, type PublishPreparation, type SocialCopy, type PublishRequest } from "../../shared/publishing";
-import { cloudProviders, providerDetails, type AIProvider } from "../../shared/ai-providers";
+import { cloudProviders, providerDetails, schemaOnlyProviders, type AIProvider } from "../../shared/ai-providers";
 import { useAIProviders } from "../lib/useAIProviders";
 import { api, post } from "../lib/api";
 import { Button } from "./ui/button";
@@ -120,9 +120,9 @@ export function PublishDialog({ project, clip, jobs, health, close, refresh, ope
           </select></label><label className="field-label">Copy language<input value={language} maxLength={60} onChange={e => { setLanguage(e.target.value); setCloudConsent(false); }} /></label></div>
           {provider !== "local" ? <>
             <label className="field-label">Model ID<input value={model} maxLength={120} onChange={e => { setModel(e.target.value); setCloudConsent(false); }} /></label>
-            {provider !== "openai" && provider !== "anthropic" && <label className="field-label">Output format<select value={format} onChange={e => setFormat(e.target.value as typeof format)}><option value="auto">Provider default</option><option value="json_schema">JSON schema</option><option value="json_object">JSON object</option></select></label>}
-            <p className="suggestion-note provider-endpoint">Destination: {providerStatus?.endpoint || "Not configured"}. One API request per clip; your provider may charge.</p>
-            {!providerStatus?.configured && <p className="notice">Add this provider's key in Studio settings first.</p>}
+            {!schemaOnlyProviders.includes(provider) && <label className="field-label">Output format<select value={format} onChange={e => setFormat(e.target.value as typeof format)}><option value="auto">Provider default</option><option value="json_schema">JSON schema</option><option value="json_object">JSON object</option></select></label>}
+            <p className="suggestion-note provider-endpoint">Destination: {providerStatus?.endpoint || "Not configured"}. {provider === "claude-code" ? "One Claude Code request per clip; it uses your Claude plan's usage." : "One API request per clip; your provider may charge."}</p>
+            {!providerStatus?.configured && <p className="notice">{provider === "claude-code" ? "Install Claude Code and sign in with claude in a terminal, then check again in Studio settings." : "Add this provider's key in Studio settings first."}</p>}
             <label className="social-check"><input type="checkbox" checked={cloudConsent} onChange={e => setCloudConsent(e.target.checked)} />Share this clip's transcript, title and copy language with the selected provider for this request.</label>
           </> : <p className="suggestion-note">{health?.qwen?.ready ? "Qwen runs locally. Long or dense clips may exceed its context limit." : health?.qwen?.message || "Checking Qwen availability…"}</p>}
           <Button variant="secondary" disabled={!language.trim() || (provider === "local" ? !health?.qwen?.ready : !cloudConsent || !providerStatus?.configured || !model.trim())} onClick={() => void action(generate)}>Generate social copy</Button>

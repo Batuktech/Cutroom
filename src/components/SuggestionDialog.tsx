@@ -3,7 +3,7 @@ import { LoaderCircle, Play, Scissors } from "lucide-react";
 import type { Health, Job, Project } from "../../shared/types";
 import type { ClipSuggestion } from "../../shared/suggestions";
 import { defaultSuggestionOptions, suggestionInterests, type SuggestionOptions } from "../../shared/suggestion-options";
-import { providerDetails, cloudProviders, type AIProvider } from "../../shared/ai-providers";
+import { providerDetails, cloudProviders, schemaOnlyProviders, type AIProvider } from "../../shared/ai-providers";
 import { useAIProviders } from "../lib/useAIProviders";
 import { ProviderKeyDisclosure } from "./AIProviderSettings";
 import { post } from "../lib/api";
@@ -112,7 +112,7 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
           changeOptions({ provider: next, model: providerDetails[next].model, outputFormat: "auto" }); setConsent(false);
         }}>
           <option value="local">Local Qwen3-8B · no API cost</option>
-          {cloudProviders.map(id => <option key={id} value={id}>{providerDetails[id].name} · your API key</option>)}
+          {cloudProviders.map(id => <option key={id} value={id}>{providerDetails[id].name} · {id === "claude-code" ? "your Claude sign-in" : "your API key"}</option>)}
         </select></label>
         {cloud && <>
           <div className="suggestion-controls">
@@ -122,15 +122,17 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
               {[1, 5, 10, 20, 40, 60, 100].map(n => <option key={n} value={n}>Up to {n} {n === 1 ? "request" : "requests"}</option>)}
             </select></label>
           </div>
-          {provider !== "openai" && provider !== "anthropic" && <label className="field-label">Output compatibility<select value={options.outputFormat ?? "auto"} disabled={pending || !!active} onChange={e => changeOptions({ outputFormat: e.target.value as SuggestionOptions["outputFormat"] })}>
+          {!schemaOnlyProviders.includes(provider) && <label className="field-label">Output compatibility<select value={options.outputFormat ?? "auto"} disabled={pending || !!active} onChange={e => changeOptions({ outputFormat: e.target.value as SuggestionOptions["outputFormat"] })}>
             <option value="auto">Provider default · {providerDetails[provider].format === "json_object" ? "JSON mode" : "JSON schema"}</option>
             <option value="json_schema">JSON schema</option><option value="json_object">JSON mode</option>
           </select></label>}
-          <p className="suggestion-note">Choose a model supporting the selected JSON format. JSON mode uses a schema in the prompt; all proposals still pass local validation. Each request allows up to 4,096 output tokens. This is a request cap, not a money limit; set a spending limit with your provider. Findings are saved as sections finish. Reaching the cap can leave a partial scan.</p>
+          <p className="suggestion-note">{provider === "claude-code"
+            ? "Use a Claude Code model name such as opus or sonnet. Each request runs claude once and uses your Claude plan's usage limits, which Anthropic may bill as extra usage. All proposals still pass local validation. Findings are saved as sections finish. Reaching the cap can leave a partial scan."
+            : "Choose a model supporting the selected JSON format. JSON mode uses a schema in the prompt; all proposals still pass local validation. Each request allows up to 4,096 output tokens. This is a request cap, not a money limit; set a spending limit with your provider. Findings are saved as sections finish. Reaching the cap can leave a partial scan."}</p>
           <ProviderKeyDisclosure key={provider} provider={provider} status={providerStatus} refresh={providers.refresh} />
           {providers.error && <p role="alert" className="error-message">{providers.error} <Button variant="secondary" size="small" onClick={() => void providers.refresh()}>Retry</Button></p>}
           <label className="cloud-consent"><input type="checkbox" checked={consent} disabled={pending || !!active} onChange={e => setConsent(e.target.checked)} />
-            <span>For this analysis, send transcript text, timestamps, interests, and guidance to {providerDetails[provider].name}{provider === "custom" ? ` at ${providerStatus?.endpoint || "the configured endpoint"}` : ""}{provider === "openrouter" ? " and its model provider" : ""}. I understand API usage may cost money. Audio and video stay on this computer.</span>
+            <span>For this analysis, send transcript text, timestamps, interests, and guidance to {providerDetails[provider].name}{provider === "custom" ? ` at ${providerStatus?.endpoint || "the configured endpoint"}` : ""}{provider === "openrouter" ? " and its model provider" : ""}{provider === "claude-code" ? " (Anthropic)" : ""}. I understand {provider === "claude-code" ? "this uses my Claude plan or account usage" : "API usage may cost money"}. Audio and video stay on this computer.</span>
           </label>
         </>}
       </div>
@@ -205,7 +207,7 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
       <p className="suggestion-note">{review.options
         ? `${review.options.interests.map(id => suggestionInterests.find(i => i.id === id)?.label).join(", ")} · up to ${review.options.maxDuration}s · ${review.options.strictness}`
         : `Legacy review · ${review.focus} · old target ${review.target}s`} · {new Date(review.createdAt).toLocaleString()}. These are possibilities to review, not predictions of views.</p>
-      {review.usage && <p className="suggestion-note">{providerDetails[review.usage.provider].name} · {review.usage.model} · {review.usage.requests} API {review.usage.requests === 1 ? "request" : "requests"} · {review.usage.inputTokens.toLocaleString()} input / {review.usage.outputTokens.toLocaleString()} output tokens reported{review.usage.limitReached ? " · Request cap reached" : ""}. Provider billing is authoritative; failed or cancelled requests may also be billed.</p>}
+      {review.usage && <p className="suggestion-note">{providerDetails[review.usage.provider].name} · {review.usage.model} · {review.usage.requests} {review.usage.requests === 1 ? "request" : "requests"} · {review.usage.inputTokens.toLocaleString()} input / {review.usage.outputTokens.toLocaleString()} output tokens reported{review.usage.limitReached ? " · Request cap reached" : ""}. Provider billing is authoritative; failed or cancelled requests may also be billed.</p>}
       {review.complete === false && <p role="status" className="notice">{analysisRunning ? "Live findings: preview now, or stop analysis to select from the saved candidates." : "Partial scan. These saved findings are available to preview and add; some sections or second reviews remain unfinished."}</p>}
       {review.diagnostics && <details className="suggestion-diagnostics"><summary>How this result was selected</summary>
         <p>{review.diagnostics.proposed} proposed · {review.diagnostics.invalid} outside source/timing rules · {review.diagnostics.duplicates} {review.diagnostics.duplicates === 1 ? "duplicate" : "duplicates"} · {review.diagnostics.rejected} rejected by Strict review</p>
