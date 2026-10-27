@@ -1,6 +1,6 @@
 # Cloud AI with your own API key
 
-Cutroom offers **16 built-in providers plus a custom OpenAI-compatible endpoint** to suggest clips from a transcript. Qwen stays the default and runs locally. Cloud review needs no local Qwen installation or GPU. Whisper transcription, caption rendering, and video export remain local.
+Cutroom offers **16 built-in API-key providers, a custom OpenAI-compatible endpoint, and [Claude Code (local CLI)](#claude-code-local-cli)** to suggest clips from a transcript. Qwen stays the default and runs locally. Cloud review needs no local Qwen installation or GPU. Whisper transcription, caption rendering, and video export remain local.
 
 ## Provider catalog
 
@@ -45,17 +45,38 @@ Cutroom charges nothing for this feature; **the API provider can charge for each
 
 Reaching the request cap stops further requests and saves a partial result. Some transcript sections or second reviews may remain unfinished. Reviewed keeps unchecked candidates marked for closer review; Strict only shows candidates that passed the second check. A new run starts from the beginning and can incur charges for sections scanned before; it is not a resume operation.
 
-Requests time out after two minutes and are not automatically retried. Cancellation aborts the in-flight HTTP request and prevents later results from being saved, but cannot revoke a request the provider already received. Provider failures leave existing saved findings available. Forgetting a session key does not cancel an analysis already running; use **Stop analysis, keep findings** for that.
+API requests time out after two minutes (Claude Code after five) and are not automatically retried. Cancellation aborts the in-flight HTTP request and prevents later results from being saved, but cannot revoke a request the provider already received. Provider failures leave existing saved findings available. Forgetting a session key does not cancel an analysis already running; use **Stop analysis, keep findings** for that.
 
-## Chat subscriptions
+## Claude Code (local CLI)
 
-There is no ChatGPT/Claude subscription login in Cutroom. ChatGPT and the OpenAI API have separate billing systems. Anthropic directs developers building products for other users to API keys or supported cloud providers. A consumer chat subscription is not a general API credential. Cutroom does not read Codex/Claude login files, browser cookies, or subscription tokens.
+**Claude Code (local CLI)** lets clip review and social copy use your own Claude sign-in instead of an API key. Cutroom runs your installed, unmodified [Claude Code](https://code.claude.com/docs/en/quickstart) in headless mode. Claude Code sends the request to Anthropic using the account you signed in with.
+
+1. Install Claude Code, open a terminal, run `claude`, and sign in with your Claude subscription. `claude auth status` should report that you are logged in.
+   - Headless alternative: run `claude setup-token`, then set `CLAUDE_CODE_OAUTH_TOKEN` in the environment that starts Cutroom (your shell profile, or the untracked `.env`, which stores it as plaintext) and restart. Claude Code reads that variable itself; Cutroom only leaves it in the CLI's environment.
+2. Open **Studio settings → Cloud AI**, choose **Claude Code (local CLI)**, and select **Check again**. Cutroom shows whether the CLI was found and whether it is signed in. It does not show or keep your email or organization.
+3. In **Suggest cuts → AI review**, choose **Claude Code (local CLI) · your Claude sign-in**, keep the model (`opus`) or enter another Claude Code model name such as `sonnet`, and confirm transcript sharing.
+
+How Cutroom runs it:
+
+- Each request starts `claude -p` with JSON output and the clip schema. Tools, MCP servers, hooks, plugins, skills, slash commands, `CLAUDE.md`, and session saving are turned off (`--tools ""`, `--strict-mcp-config`, `--safe-mode`, `--disable-slash-commands`, `--no-session-persistence`). It runs in an empty temporary folder.
+- The transcript goes through standard input, not the command line. The command line contains the model name, Cutroom's instruction (including your editorial guidance), and the JSON schema.
+- The CLI gets a short allowlist of environment variables (such as `PATH`, `HOME`, locale, proxy, `CLAUDE_CONFIG_DIR`, and `CLAUDE_CODE_OAUTH_TOKEN`). `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, other API keys, Postiz and social credentials are not passed, so the CLI cannot switch to API billing.
+- Cutroom has no field for Claude tokens, never reads Claude Code's credential files, keychain entries, or `CLAUDE_CODE_OAUTH_TOKEN`, and never calls Anthropic with your login itself. Anthropic does not allow third-party apps to collect, store, or route Claude subscription credentials, so only the official CLI uses them.
+- Requests time out after five minutes. Cancelling stops the CLI process. Errors show a fixed message; Cutroom never echoes CLI output, which can quote the transcript or account details.
+- If `claude` is not on the server's `PATH`, set `CUTROOM_CLAUDE_CODE_BIN` in `.env` to the full path of the executable and restart. On Windows, use the native installer's `claude.exe`; npm `.cmd` shims are not started.
+
+Usage and billing: no API key or Console credits are needed. Requests count toward your Claude plan's usage limits, the same as running `claude` yourself (or toward your Console account if the CLI is signed in with one). Anthropic's [support article on third-party tools](https://support.claude.com/en/articles/13189465-log-in-to-your-claude-account) says it may draw this kind of use from usage credits instead of subscription limits, and Pro/Max limits assume ordinary individual use. Use a small request cap at first. Token totals come from the CLI's report and are not an invoice. This option is for your own computer and your own account; do not share a Cutroom server so other people use your sign-in.
+
+## Chat subscriptions and API keys
+
+ChatGPT and the OpenAI API have separate billing systems, and a Claude chat subscription does not include Claude API credits. For every provider except Claude Code (local CLI), use an API key from that provider. Cutroom does not read Codex/Claude login files, browser cookies, or subscription tokens.
 
 Official references:
 
 - [OpenAI: ChatGPT and API billing](https://help.openai.com/en/articles/9039756)
 - [Anthropic: paid Claude plans and API billing](https://support.claude.com/en/articles/9876003-i-have-a-paid-claude-subscription-pro-max-team-or-enterprise-plans-why-do-i-have-to-pay-separately-to-use-the-claude-api-and-console)
 - [Anthropic: supported account authentication and third-party tools](https://support.claude.com/en/articles/13189465-log-in-to-your-claude-account)
+- [Claude Code: legal and compliance, authentication and credential use](https://code.claude.com/docs/en/legal-and-compliance)
 - [OpenAI structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs)
 - [Anthropic structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)
 - [OpenRouter structured outputs](https://openrouter.ai/docs/guides/features/structured-outputs)

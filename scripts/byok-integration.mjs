@@ -1,4 +1,4 @@
-import { cloudProviders, providerDetails } from "../shared/ai-providers.ts";
+import { apiKeyProviders, providerDetails } from "../shared/ai-providers.ts";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { mkdtemp, mkdir, readFile } from "node:fs/promises";
@@ -13,7 +13,8 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 function check(name) { checks++; console.log(`PASS ${name}`); }
 async function start() {
   server = spawn(process.execPath, ["--import", "tsx", "--import", "./scripts/fixtures/cloud-provider.mjs", "server/index.ts"], {
-    env: { ...process.env, CUTROOM_DATA_DIR: directory, CUTROOM_PORT: String(port), CUTROOM_MOCK_AI_TEST: "1", ...Object.fromEntries(cloudProviders.map(p => [providerDetails[p].envKey, ""])), CUTROOM_CUSTOM_AI_BASE_URL: "https://custom-provider.example/v1" }, stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env, CUTROOM_DATA_DIR: directory, CUTROOM_PORT: String(port), CUTROOM_MOCK_AI_TEST: "1", ...Object.fromEntries(apiKeyProviders.map(p => [providerDetails[p].envKey, ""])), CUTROOM_CUSTOM_AI_BASE_URL: "https://custom-provider.example/v1",
+      CUTROOM_CLAUDE_CODE_BIN: path.resolve("scripts/fixtures/claude-code-cli.mjs") }, stdio: ["ignore", "pipe", "pipe"],
   });
   server.stdout.on("data", data => { logs += data; }); server.stderr.on("data", data => { logs += data; });
   for (let i = 0; i < 200; i++) {
@@ -45,14 +46,14 @@ try {
   const options = { provider: "openai", model: "test-model", maxDuration: 100, maxRequests: 5, cloudConsent: true };
   await request(route, "POST", options, 409);
   const secret = "sk-synthetic-secret";
-  for (const provider of cloudProviders) {
-    await request(`/ai/providers/${provider}`, "PUT", { apiKey: secret });
+  for (const provider of [...apiKeyProviders, "claude-code"]) {
+    if (provider !== "claude-code") await request(`/ai/providers/${provider}`, "PUT", { apiKey: secret });
     const result = await wait(await request(route, "POST", { ...options, provider, ...(provider === "custom" ? { cloudDestination: "https://custom-provider.example/v1/chat/completions" } : {}) }, 202));
     assert.equal(result.status, "completed");
     const review = (await request(`/projects/${project.id}`)).suggestions;
     assert.equal(review.usage.provider, provider); assert.ok(review.candidates.length); assert.equal(review.complete, true);
   }
-  check("All 17 provider options complete the real API → queue → persisted review flow without Qwen or cloud traffic");
+  check("All 18 provider options complete the real API → queue → persisted review flow without Qwen or cloud traffic");
   const scored = await wait(await request(route, "POST", { ...options, strictness: "reviewed" }, 202));
   assert.equal(scored.status, "completed");
   const cloudReview = (await request(`/projects/${project.id}`)).suggestions;
@@ -81,6 +82,16 @@ try {
   const crossOrigin = await fetch(base + "/ai/providers/openai", { method: "PUT", headers: { Origin: "https://untrusted.example", "Content-Type": "application/json" }, body: JSON.stringify({ apiKey: secret }) });
   assert.equal(crossOrigin.status, 403);
   check("Consent, provider, budget, model and Origin validation");
+  const claudeCode = (await request("/ai/providers?recheck=1")).find(s => s.provider === "claude-code");
+  assert.equal(claudeCode.configured, true); assert.equal(claudeCode.source, "login"); assert.equal(claudeCode.cli.authMethod, "claude.ai");
+  assert.ok(!JSON.stringify(claudeCode).includes("person@example.com"));
+  await request("/ai/providers/claude-code", "PUT", { apiKey: secret }, 400);
+  await request("/ai/providers/claude-code", "DELETE", undefined, 400);
+  await request(route, "POST", { ...options, provider: "claude-code", outputFormat: "json_object" }, 400);
+  const cliCancelled = await request(route, "POST", { ...options, provider: "claude-code", model: "test-delayed" }, 202);
+  await pause(300); await request(`/jobs/${cliCancelled.id}/cancel`, "POST");
+  assert.equal((await wait(cliCancelled)).status, "cancelled");
+  check("Claude Code uses its own sign-in, rejects keys, hides account details, and stops on cancel");
   const malformed = await fetch(base + "/ai/providers/openai", { method: "PUT", headers: { "Content-Type": "application/json" }, body: `{"apiKey":"${secret}` });
   assert.equal(malformed.status, 400); assert.ok(!(await malformed.text()).includes(secret));
   const failure = await wait(await request(route, "POST", { ...options, model: "test-failure" }, 202));
@@ -104,7 +115,7 @@ try {
   await request("/ai/providers/openai", "DELETE");
   await request(route, "POST", options, 409);
   await stop(); await start();
-  assert.ok((await request("/ai/providers")).every(s => !s.configured));
+  assert.ok((await request("/ai/providers")).filter(s => s.provider !== "claude-code").every(s => !s.configured));
   check("Forget and restart clear session keys");
   console.log(`${checks} BYOK integration checks passed. Synthetic fixtures only; no billed requests.`);
 } finally { await stop(); }
