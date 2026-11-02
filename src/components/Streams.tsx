@@ -170,7 +170,7 @@ export function Streams({ health, openProject, openSettings, notify }: {
         <header>
           <div>
             <h3>{stream.title}</h3>
-            <p>{stream.duration ? `${sourceTime(stream.duration)} · ` : ""}{stream.parts.length || "–"} part{stream.parts.length === 1 ? "" : "s"} · top {stream.settings.topClips}{stream.settings.reviewer === "claude-code" ? " · Claude review" : ""}{stream.settings.platforms.length ? ` · ${stream.settings.visibility} on ${stream.settings.platforms.map(p => p === "tiktok" && stream.settings.tiktokMode === "draft" ? "TikTok drafts" : platformName[p]).join(", ")}` : " · no auto-posting"}</p>
+            <p>{stream.duration ? `${sourceTime(stream.duration)} · ` : ""}{stream.parts.length || "–"} part{stream.parts.length === 1 ? "" : "s"} · top {stream.settings.topClips}{stream.settings.reviewer === "claude-code" ? " · Claude review" : ""}{stream.settings.platforms.length ? ` · ${stream.settings.visibility} on ${stream.settings.platforms.map(p => p === "tiktok" && (stream.settings.tiktokMode ?? "draft") === "draft" ? "TikTok drafts" : platformName[p]).join(", ")}` : " · no auto-posting"}</p>
           </div>
           <span className={`stream-status status-${stream.status}`}>{running(stream) && <LoaderCircle size={14} className="spin" aria-hidden />}{stream.status}</span>
         </header>
