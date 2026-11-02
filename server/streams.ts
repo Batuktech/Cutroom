@@ -254,7 +254,7 @@ async function publishClips(id: string, context: JobContext) {
       await setTarget(id, item.id, target.platform, { state: "submitting", message: undefined });
       try {
         const file = path.join(EXPORTS, current.exportId + ".mp4");
-        const draft = target.platform === "tiktok" && (getStream(id).settings.tiktokMode ?? "direct") === "draft";
+        const draft = target.platform === "tiktok" && (getStream(id).settings.tiktokMode ?? "draft") === "draft";
         const receipt = await (target.platform === "youtube" ? uploadYoutube : draft ? uploadTiktokDraft : uploadTiktok)(file, meta, context.signal);
         await setTarget(id, item.id, target.platform, { state: "submitted", remoteId: receipt.remoteId, url: receipt.url, message: receipt.message,
           caption: draft ? tiktokCaption(meta) : undefined });

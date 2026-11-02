@@ -75,7 +75,7 @@ export interface StreamRecord {
   message?: string;
   settings: Omit<StreamRequest, "url" | "publishConsent" | "cloudConsent" | "reviewer" | "tiktokMode"> & {
     reviewer?: StreamReviewer;
-    /** Streams created before drafts existed posted directly. */
+    /** Missing on streams created before drafts existed; they use drafts too, since direct posts from unaudited apps fail. */
     tiktokMode?: TiktokMode;
     /** "reviewed" is set when the user asks to post clips that scored under the autopilot bar. */
     qualityBar?: "strict" | "reviewed";
