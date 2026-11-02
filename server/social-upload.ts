@@ -50,7 +50,8 @@ export async function uploadYoutube(file: string, meta: UploadMeta, signal?: Abo
 
 const tiktokEnvelope = z.object({ error: z.object({ code: z.string(), message: z.string().optional() }).optional(), data: z.unknown().optional() });
 const tiktokMessages: Record<string, string> = {
-  unaudited_client_can_only_post_to_private_accounts: "Your TikTok app is not audited yet, so it can only post privately. Choose Private visibility or finish TikTok's app audit.",
+  // Cutroom already retries as SELF_ONLY, so a repeat means TikTok also wants the account itself private.
+  unaudited_client_can_only_post_to_private_accounts: "Your TikTok app is not audited yet, so it can only post to a private account. In TikTok, open Settings and privacy → Privacy and turn on Private account, or finish TikTok's app audit.",
   spam_risk_too_many_posts: "TikTok's daily post limit for this account was reached.",
   reached_active_user_cap: "Your TikTok app reached its daily posting quota.",
   scope_not_authorized: "The TikTok connection lacks video.publish. Connect TikTok again in Settings.",
@@ -80,16 +81,27 @@ export async function uploadTiktok(file: string, meta: UploadMeta, signal?: Abor
   const creator = z.object({ creator_username: z.string().max(200), privacy_level_options: z.array(z.string()).max(10), max_video_post_duration_sec: z.number().positive() })
     .safeParse(await tiktok("/v2/post/publish/creator_info/query/", token, {}, signal));
   if (!creator.success) throw new SocialError("TikTok returned unreadable creator settings.", true);
-  const privacy = meta.visibility === "public" ? "PUBLIC_TO_EVERYONE" : "SELF_ONLY";
+  let privacy = meta.visibility === "public" ? "PUBLIC_TO_EVERYONE" : "SELF_ONLY";
   if (!creator.data.privacy_level_options.includes(privacy)) throw new SocialError(tiktokMessages.privacy_level_option_mismatch, true);
   if (meta.duration > creator.data.max_video_post_duration_sec) throw new SocialError("This clip is longer than TikTok allows for the account.", true);
   const { chunkSize, count } = tiktokChunks(size);
   const title = Array.from([meta.title, meta.description, meta.tags.join(" ")].filter(Boolean).join("\n\n")).slice(0, 2200).join("");
-  const init = z.object({ publish_id: z.string().min(1).max(64), upload_url: z.string().url().max(2048) }).safeParse(
-    await tiktok("/v2/post/publish/video/init/", token, {
-      post_info: { title, privacy_level: privacy, disable_duet: false, disable_stitch: false, disable_comment: false, video_cover_timestamp_ms: 1000 },
-      source_info: { source: "FILE_UPLOAD", video_size: size, chunk_size: chunkSize, total_chunk_count: count },
-    }, signal));
+  const initialise = () => tiktok("/v2/post/publish/video/init/", token, {
+    post_info: { title, privacy_level: privacy, disable_duet: false, disable_stitch: false, disable_comment: false, video_cover_timestamp_ms: 1000 },
+    source_info: { source: "FILE_UPLOAD", video_size: size, chunk_size: chunkSize, total_chunk_count: count },
+  }, signal);
+  let session;
+  try { session = await initialise(); }
+  catch (error) {
+    // Unaudited apps may only post privately, just as Google locks unverified uploads to private.
+    if (!(error instanceof SocialError && error.code === "unaudited_client_can_only_post_to_private_accounts") ||
+      privacy === "SELF_ONLY" || !creator.data.privacy_level_options.includes("SELF_ONLY")) throw error;
+    privacy = "SELF_ONLY";
+    session = await initialise();
+  }
+  const privateNote = privacy !== (meta.visibility === "public" ? "PUBLIC_TO_EVERYONE" : "SELF_ONLY")
+    ? "Posted as private (only you) because the TikTok app is not audited yet." : undefined;
+  const init = z.object({ publish_id: z.string().min(1).max(64), upload_url: z.string().url().max(2048) }).safeParse(session);
   if (!init.success || new URL(init.data.upload_url).protocol !== "https:") throw new SocialError("TikTok returned an invalid upload session.", true);
   const publishId = init.data.publish_id;
   try {
@@ -114,10 +126,10 @@ export async function uploadTiktok(file: string, meta: UploadMeta, signal?: Abor
     if (status?.status === "PUBLISH_COMPLETE") {
       const id = status.publicaly_available_post_id?.[0];
       return { remoteId: publishId, url: id ? `https://www.tiktok.com/@${creator.data.creator_username}/video/${id}` : undefined,
-        message: id ? undefined : "Published. TikTok may still be reviewing it before it appears publicly." };
+        message: privateNote ?? (id ? undefined : "Published. TikTok may still be reviewing it before it appears publicly.") };
     }
     if (status?.status === "FAILED")
       throw new SocialError(`TikTok could not publish the video${status.fail_reason ? ` (${status.fail_reason.slice(0, 60)})` : ""}.`, true);
   }
-  return { remoteId: publishId, message: "Uploaded. TikTok is still processing it; check the TikTok app." };
+  return { remoteId: publishId, message: `Uploaded. TikTok is still processing it; check the TikTok app.${privateNote ? ` ${privateNote}` : ""}` };
 }
