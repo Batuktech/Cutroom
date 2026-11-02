@@ -23,4 +23,13 @@ describe("stream planning", () => {
     expect(streamRequestSchema.safeParse({ url, platforms: ["tiktok", "tiktok"], publishConsent: true }).success).toBe(false);
     expect(streamRequestSchema.safeParse({ url, topClips: 50 }).success).toBe(false);
   });
+  it("reviews locally by default and needs separate consent before Claude reads transcripts", () => {
+    const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+    expect(streamRequestSchema.parse({ url }).reviewer).toBe("local");
+    expect(streamRequestSchema.safeParse({ url, reviewer: "claude-code" }).success).toBe(false);
+    // Publishing consent does not cover sending transcripts to Anthropic.
+    expect(streamRequestSchema.safeParse({ url, reviewer: "claude-code", platforms: ["youtube"], publishConsent: true }).success).toBe(false);
+    expect(streamRequestSchema.safeParse({ url, reviewer: "claude-code", cloudConsent: true }).success).toBe(true);
+    expect(streamRequestSchema.safeParse({ url, reviewer: "openai", cloudConsent: true }).success).toBe(false);
+  });
 });

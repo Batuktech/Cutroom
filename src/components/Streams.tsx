@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Check, CircleDashed, ExternalLink, LoaderCircle, RotateCcw, X } from "lucide-react";
 import type { Health } from "../../shared/types";
-import type { AutopostPlatform, SocialAccountStatus, StreamPart, StreamRecord, StreamRequest } from "../../shared/streams";
+import type { AutopostPlatform, SocialAccountStatus, StreamPart, StreamRecord, StreamRequest, StreamReviewer } from "../../shared/streams";
 import { streamLanguages } from "../../shared/streams";
 import { sourceTime } from "../../shared/youtube-range";
 import { api, post } from "../lib/api";
+import { useAIProviders } from "../lib/useAIProviders";
 import { Button } from "./ui/button";
 
 const platformName: Record<AutopostPlatform, string> = { youtube: "YouTube Shorts", tiktok: "TikTok" };
-const stageText: Record<StreamPart["stage"], string> = {
+const reviewerName: Record<StreamReviewer, string> = { local: "Qwen", "claude-code": "Claude" };
+const stageText = (stage: StreamPart["stage"], reviewer: StreamReviewer = "local") => ({
   queued: "Waiting in queue", downloading: "Downloading", transcribing: "Transcribing with Whisper large-v3",
-  analyzing: "Finding clips with Qwen", ready: "Analyzed", failed: "Failed", cancelled: "Cancelled",
-};
+  analyzing: `Finding clips with ${reviewerName[reviewer]}`, ready: "Analyzed", failed: "Failed", cancelled: "Cancelled",
+})[stage];
 const running = (s: StreamRecord) => ["planning", "processing", "publishing"].includes(s.status);
 
 export function Streams({ health, openProject, openSettings, notify }: {
@@ -23,7 +25,10 @@ export function Streams({ health, openProject, openSettings, notify }: {
   const [streams, setStreams] = useState<StreamRecord[] | null>(null);
   const [accounts, setAccounts] = useState<SocialAccountStatus[]>([]);
   const [loadError, setLoadError] = useState("");
-  const [form, setForm] = useState<Omit<StreamRequest, "interests">>({ url: "", language: "auto", topClips: 5, visibility: "public", platforms: [], publishConsent: false });
+  const [form, setForm] = useState<Omit<StreamRequest, "interests">>({ url: "", language: "auto", topClips: 5, visibility: "public", platforms: [],
+    reviewer: "local", publishConsent: false, cloudConsent: false });
+  const ai = useAIProviders();
+  const claude = ai.statuses.find(s => s.provider === "claude-code");
   const [busy, setBusy] = useState(false), [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -42,7 +47,9 @@ export function Streams({ health, openProject, openSettings, notify }: {
   const checks = [
     { ok: !!health?.youtube, text: "YouTube downloader", fix: "Run npm run setup:ai and restart" },
     { ok: !!large, text: "Whisper large-v3 installed", fix: "Install it in Settings" },
-    { ok: !!health?.qwen.ready, text: "Local Qwen3-8B", fix: health?.qwen.message },
+    form.reviewer === "local" ? { ok: !!health?.qwen.ready, text: "Local Qwen3-8B", fix: health?.qwen.message }
+      : { ok: !!claude?.configured, text: "Claude Code signed in", fix: !claude ? "Checking…" : !claude.cli?.installed
+        ? "Install Claude Code, then check again" : "Run claude in a terminal to sign in, then check again" },
   ];
   const connected = (p: AutopostPlatform) => accounts.find(a => a.platform === p)?.connected;
   const blocked = checks.some(c => !c.ok);
@@ -52,7 +59,7 @@ export function Streams({ health, openProject, openSettings, notify }: {
     setBusy(true); setError("");
     try {
       await post<StreamRecord>("/streams", form);
-      setForm(f => ({ ...f, url: "", publishConsent: false }));
+      setForm(f => ({ ...f, url: "", publishConsent: false, cloudConsent: false }));
       notify("Stream queued. Parts are processed one at a time; large-v3 on CPU can take hours per part.");
       await load();
     } catch (e) { setError((e as Error).message); }
@@ -69,7 +76,7 @@ export function Streams({ health, openProject, openSettings, notify }: {
     <div className="page-heading">
       <div>
         <h1>Stream autopilot.<br /><span>Long VOD in, shorts out.</span></h1>
-        <p>Paste a finished stream. Cutroom splits it into one-hour projects, transcribes each with Whisper large-v3, lets local Qwen pick the strongest moments, then renders and posts the best ones.</p>
+        <p>Paste a finished stream. Cutroom splits it into one-hour projects, transcribes each with Whisper large-v3, lets local Qwen or your Claude sign-in pick the strongest moments, then renders and posts the best ones.</p>
       </div>
     </div>
 
@@ -79,6 +86,8 @@ export function Streams({ health, openProject, openSettings, notify }: {
         {checks.map(c => <li key={c.text} className={c.ok ? "ok" : "missing"}>
           {c.ok ? <Check size={15} aria-hidden /> : <AlertCircle size={15} aria-hidden />}
           <span>{c.text}{!c.ok && c.fix ? ` · ${c.fix}` : ""}</span>
+          {!c.ok && form.reviewer === "claude-code" && c.text.startsWith("Claude") &&
+            <button type="button" className="text-link" onClick={() => void ai.refresh(true)}>Check again</button>}
         </li>)}
       </ul>
       <form onSubmit={start} className="stream-form">
@@ -96,6 +105,19 @@ export function Streams({ health, openProject, openSettings, notify }: {
             {[1, 2, 3, 4, 5, 6, 8, 10].map(n => <option key={n} value={n}>{n}</option>)}
           </select>
         </label>
+        <label className="field-label">Find clips and write titles with
+          <select value={form.reviewer} onChange={e => setForm(f => ({ ...f, reviewer: e.target.value as StreamReviewer, cloudConsent: false }))}>
+            <option value="local">Local Qwen3-8B · stays on this computer</option>
+            <option value="claude-code">Claude Code · your Claude sign-in</option>
+          </select>
+        </label>
+        {form.reviewer === "claude-code" && <div className="stream-reviewer-note">
+          <p className="suggestion-note">Claude is faster than local Qwen and stronger in languages other than English. Each part makes up to about 20 requests, which count toward your Claude plan's usage limits. Transcription still runs locally with Whisper.</p>
+          <label className="social-check">
+            <input type="checkbox" checked={form.cloudConsent} onChange={e => setForm(f => ({ ...f, cloudConsent: e.target.checked }))} />
+            <span>Send each part's transcript text and timestamps to Anthropic through Claude Code for this stream. The video stays on this computer.</span>
+          </label>
+        </div>}
         <fieldset className="social-fieldset stream-platforms">
           <legend className="field-label">Post automatically to</legend>
           {(["youtube", "tiktok"] as const).map(p => <label className="social-check" key={p}>
@@ -117,7 +139,8 @@ export function Streams({ health, openProject, openSettings, notify }: {
           </>}
         </fieldset>
         {error && <p role="alert" className="error-message">{error}</p>}
-        <Button type="submit" disabled={busy || blocked || !form.url.trim() || (form.platforms.length > 0 && !form.publishConsent)}>
+        <Button type="submit" disabled={busy || blocked || !form.url.trim() || (form.platforms.length > 0 && !form.publishConsent) ||
+          (form.reviewer === "claude-code" && !form.cloudConsent)}>
           {busy ? <><LoaderCircle size={16} className="spin" />Queuing</> : form.platforms.length ? "Start and publish automatically" : "Start: prepare clips only"}
         </Button>
       </form>
@@ -132,7 +155,7 @@ export function Streams({ health, openProject, openSettings, notify }: {
         <header>
           <div>
             <h3>{stream.title}</h3>
-            <p>{stream.duration ? `${sourceTime(stream.duration)} · ` : ""}{stream.parts.length || "–"} part{stream.parts.length === 1 ? "" : "s"} · top {stream.settings.topClips}{stream.settings.platforms.length ? ` · ${stream.settings.visibility} on ${stream.settings.platforms.map(p => platformName[p]).join(", ")}` : " · no auto-posting"}</p>
+            <p>{stream.duration ? `${sourceTime(stream.duration)} · ` : ""}{stream.parts.length || "–"} part{stream.parts.length === 1 ? "" : "s"} · top {stream.settings.topClips}{stream.settings.reviewer === "claude-code" ? " · Claude review" : ""}{stream.settings.platforms.length ? ` · ${stream.settings.visibility} on ${stream.settings.platforms.map(p => platformName[p]).join(", ")}` : " · no auto-posting"}</p>
           </div>
           <span className={`stream-status status-${stream.status}`}>{running(stream) && <LoaderCircle size={14} className="spin" aria-hidden />}{stream.status}</span>
         </header>
@@ -142,7 +165,7 @@ export function Streams({ health, openProject, openSettings, notify }: {
             {part.stage === "ready" ? <Check size={15} aria-hidden /> : part.stage === "failed" ? <AlertCircle size={15} aria-hidden />
               : part.stage === "cancelled" ? <X size={15} aria-hidden /> : part.stage === "queued" ? <CircleDashed size={15} aria-hidden /> : <LoaderCircle size={15} className="spin" aria-hidden />}
             <span className="part-time">Part {part.index + 1} · {sourceTime(part.start)}–{sourceTime(part.end)}</span>
-            <span>{stageText[part.stage]}{part.stage === "ready" && part.candidates !== undefined ? ` · ${part.candidates} candidates` : ""}{part.message ? ` · ${part.message}` : ""}</span>
+            <span>{stageText(part.stage, stream.settings.reviewer)}{part.stage === "ready" && part.candidates !== undefined ? ` · ${part.candidates} candidates` : ""}{part.message ? ` · ${part.message}` : ""}</span>
             {part.projectId && <button type="button" className="text-link" onClick={() => openProject(part.projectId!)}>Open project</button>}
           </li>)}
         </ol>}

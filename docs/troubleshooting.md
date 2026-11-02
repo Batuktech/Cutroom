@@ -11,7 +11,7 @@ Start with `npm run doctor` from the project directory. It checks the tools, fon
 | Transcription is unavailable | Check **Studio settings**. Run `npm run setup:ai` if the Python worker is missing, then restart the studio so it checks the environment again. Install a model if none is ready. |
 | A model download fails | Check the connection and available disk space, then retry **Install model**. Installation needs internet access; subsequent transcription uses local weights. |
 | A job stays queued | The studio processes one job at a time. Check the currently running job in processing history. Cancel it if you want to free the queue. |
-| Transcription is slow | Try Tiny on a short recording first. CPU time depends on the model, hardware, and recording. Other running applications also compete for memory and CPU. |
+| Transcription is slow | On Linux with an NVIDIA GPU, run `npm run setup:ai -- --gpu` and restart; progress should say **Transcribing on the GPU**. Otherwise try Tiny on a short recording first. CPU time depends on the model, hardware, and recording. Other running applications also compete for memory and CPU. |
 | Speech is wrong or missing | Listen to the source, choose its spoken language explicitly, and try a larger installed model. Correct the transcript or import a reviewed SRT. Silent footage has no speech to transcribe. |
 | A transcription job says captions changed | Your newer caption edit was preserved. Keep it, or deliberately start transcription again after saving it. |
 | The face tool finds no face | Set the crop manually, or choose **Fit full video**. The tool detects frontal faces in sampled frames and suggests a fixed position. It does not follow moving people. |
@@ -20,6 +20,7 @@ Start with `npm run doctor` from the project directory. It checks the tools, fon
 | A job was interrupted after closing the app | Restart and run that operation again. Project edits and completed files persist; unfinished jobs do not automatically resume. |
 | A deleted project is missing | **Delete project and files** permanently removes stored media. Restore a complete file backup before importing metadata. Older metadata-only library removals kept the media and can still be recovered with **Studio settings → Restore metadata**. |
 | YouTube import is unavailable | Run `npm run setup:ai`, restart Cutroom, and check `npm run doctor`. File import remains available. |
+| A YouTube range import is slow | Range imports read the video in parallel 10 MB pieces; speed then depends on the connection and the encoder. NVENC is used automatically on NVIDIA GPUs. Formats YouTube only offers as a live-style stream fall back to a slower single stream. |
 | YouTube download fails | Review the queue message. A video can be unavailable, require sign-in, or be blocked by YouTube. Try another public video or choose a local file. |
 | Project deletion reports a file error | The project entry remains so you can fix file permissions and retry. Some files may already have been deleted; this action cannot undo those deletions. |
 

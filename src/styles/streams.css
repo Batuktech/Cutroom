@@ -33,7 +33,7 @@
 .stream-actions .suggestion-note { margin: 0; }
 @media (min-width: 720px) {
   .stream-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .stream-form .stream-url, .stream-form .stream-platforms, .stream-form > .error-message, .stream-form > .button { grid-column: 1 / -1; }
+  .stream-form .stream-url, .stream-form .stream-platforms, .stream-form .stream-reviewer-note, .stream-form > .error-message, .stream-form > .button { grid-column: 1 / -1; }
   .stream-parts li { grid-template-columns: 18px minmax(160px, auto) minmax(0, 1fr) auto; }
   .stream-parts li > :not(svg) { grid-column: auto; }
 }

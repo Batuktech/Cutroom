@@ -9,6 +9,7 @@ import { analyzeSuggestions } from "./suggestions.js";
 import { transcriptHash } from "./suggestion-domain.js";
 import { clipSourceHash, generateCopy } from "./social-copy.js";
 import { SocialError } from "./social-accounts.js";
+import { aiCredentials } from "./ai-credentials.js";
 import { uploadTiktok, uploadYoutube, type UploadMeta } from "./social-upload.js";
 import { clipSchema } from "./domain.js";
 import { youtubeUrl } from "../shared/youtube.js";
@@ -16,6 +17,10 @@ import { suggestionOptionsSchema } from "../shared/suggestions.js";
 import { copyOptionsSchema } from "../shared/publishing.js";
 import { autopilotEligible } from "../shared/clip-quality.js";
 import { rankCandidates, streamParts, type AutopostClip, type AutopostPlatform, type StreamPart, type StreamRecord, type StreamRequest } from "../shared/streams.js";
+
+// Records saved before the reviewer choice existed used local Qwen.
+const reviewerOf = (stream: StreamRecord) => stream.settings.reviewer ?? "local";
+const reviewerName = (stream: StreamRecord) => reviewerOf(stream) === "local" ? "local Qwen" : "Claude Code";
 
 const FILE = path.join(ROOT, "streams.json");
 let streams: StreamRecord[] = [];
@@ -75,7 +80,7 @@ export async function createStream(request: StreamRequest) {
   const active = streams.find(s => s.url === url && ["planning", "processing", "publishing"].includes(s.status));
   if (active) return active;
   const now = new Date().toISOString();
-  const { url: _url, publishConsent: _consent, ...settings } = request;
+  const { url: _url, publishConsent: _consent, cloudConsent: _cloudConsent, ...settings } = request;
   const stream: StreamRecord = { id: randomUUID(), url, title: "YouTube stream", createdAt: now, updatedAt: now,
     status: "planning", settings, parts: [], clips: [] };
   streams.unshift(stream);
@@ -116,7 +121,7 @@ type Stage = "download" | "transcribe" | "analyze";
 function queueStage(id: string, index: number, stage: Stage) {
   const stream = getStream(id), part = stream.parts[index];
   if (stream.status === "cancelled") return;
-  const label = `Stream part ${index + 1}/${stream.parts.length} · ${stage === "download" ? "download" : stage === "transcribe" ? "Whisper large-v3" : "Qwen review"}`;
+  const label = `Stream part ${index + 1}/${stream.parts.length} · ${stage === "download" ? "download" : stage === "transcribe" ? "Whisper large-v3" : reviewerOf(stream) === "local" ? "Qwen review" : "Claude review"}`;
   const kind = stage === "download" ? "download" : stage === "transcribe" ? "transcribe" : "suggest";
   const job = enqueue(kind, stage === "download" ? undefined : part.projectId, context => runStage(id, index, stage, context),
     `stream:${id}:${index}:${stage}`, label);
@@ -145,7 +150,10 @@ async function runStage(id: string, index: number, stage: Stage, context: JobCon
       return result;
     }
     await setPart(id, index, { stage: "analyzing" });
-    const options = suggestionOptionsSchema.parse({ provider: "local", interests: stream.settings.interests, strictness: "reviewed",
+    const reviewer = reviewerOf(stream);
+    // Consent was given for this stream; the sign-in can still have lapsed since it started.
+    if (reviewer !== "local") await aiCredentials.ready(reviewer);
+    const options = suggestionOptionsSchema.parse({ provider: reviewer, interests: stream.settings.interests, strictness: "reviewed",
       count: 15, minDuration: 15, maxDuration: 60 });
     const result = await analyzeSuggestions(part.projectId!, options, context);
     await setPart(id, index, { stage: "ready", candidates: result.candidates });
@@ -220,8 +228,9 @@ async function publishClips(id: string, context: JobContext) {
       // Framing and AI copy are improvements; the fallback is a centred crop and the Qwen title.
       await reframeClip(project.id, structuredClone(clip), { ...context, progress: () => {} }).catch(() => {});
       project = getProject(item.projectId); clip = project.clips.find(c => c.id === item.clipId)!;
-      context.progress(share(.15), `${label} · writing titles with local Qwen`);
-      await generateCopy(project.id, clip.id, copyOptionsSchema.parse({ provider: "local", sourceHash: clipSourceHash(project, clip) }),
+      const reviewer = reviewerOf(getStream(id));
+      context.progress(share(.15), `${label} · writing titles with ${reviewerName(getStream(id))}`);
+      await generateCopy(project.id, clip.id, copyOptionsSchema.parse({ provider: reviewer, sourceHash: clipSourceHash(project, clip), cloudConsent: reviewer !== "local" }),
         { ...context, progress: () => {} }).catch(() => {});
       project = getProject(item.projectId); clip = project.clips.find(c => c.id === item.clipId)!;
       const file = await exportClip(project.id, structuredClone(clip), "1080",

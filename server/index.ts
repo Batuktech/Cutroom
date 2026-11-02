@@ -206,7 +206,8 @@ app.post("/api/streams", async (req, res) => {
   const blockers = [
     !ready.youtube || !ready.ffmpeg ? "YouTube import needs the local downloader and FFmpeg. Run npm run setup:ai, then restart Cutroom." : "",
     !(await modelList()).find(m => m.id === "large-v3")?.installed ? "Install Whisper Large v3 in Settings first." : "",
-    !ready.qwen.ready ? ready.qwen.message : "",
+    request.reviewer === "local" ? (ready.qwen.ready ? "" : ready.qwen.message)
+      : await aiCredentials.ready(request.reviewer).then(() => "", (error: Error) => error.message),
     ...request.platforms.map(platform => socialAccounts.status().find(a => a.platform === platform)?.connected ? ""
       : `Connect ${platform === "youtube" ? "YouTube" : "TikTok"} in Settings, or untick it.`),
   ].filter(Boolean);

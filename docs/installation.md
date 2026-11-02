@@ -29,6 +29,16 @@ npm run setup:ai
 
 This creates `.venv/` and installs the pinned requirements from PyPI. It does not install system packages or download speech weights. Restart the studio. For transcription, open **Studio settings → Speech models → Install model**. Choose Tiny, Base, Small, or Large v3; downloads go into the configured data directory. The transcription dialog defaults to the largest installed model. Review accuracy and resource use before starting a long recording.
 
+### Faster transcription on an NVIDIA GPU (Linux)
+
+Whisper runs on the CPU by default, using half the logical cores (between 2 and 8). With an NVIDIA GPU and a CUDA 12 driver, install NVIDIA's cuBLAS and cuDNN libraries into `.venv` (about 2 GB):
+
+```sh
+npm run setup:ai -- --gpu
+```
+
+Transcription then uses the GPU automatically and shows **Transcribing on the GPU** in its progress. If the GPU cannot load the model, for example because it is short of memory, Whisper falls back to the CPU. Set `CUTROOM_WHISPER_DEVICE=cpu` in `.env` to always use the CPU, or `cuda` to fail instead of falling back. Large v3 needs about 3 GB of free GPU memory. Transcription and local Qwen take turns in the single job queue, so they never share the GPU.
+
 YouTube import uses the same environment, yt-dlp, FFmpeg, and the Node runtime. It needs an internet connection and supports public finished videos subject to source availability. No browser cookies or account sign-in are used.
 
 ## Optional local clip analysis

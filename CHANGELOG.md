@@ -8,6 +8,9 @@
 - Session-only key management, optional environment keys, cancellation, and provider-error redaction.
 - Cloud setup/billing documentation and synthetic provider/API tests without paid requests.
 - Claude Code (local CLI) provider: clip review and social copy can run through the user's own signed-in Claude Code with tools and customizations off, without Cutroom handling Claude credentials.
+- Whisper transcription runs on an NVIDIA GPU when the optional CUDA libraries are installed (`npm run setup:ai -- --gpu`), falling back to the CPU; CPU transcription and range imports now use up to 8 threads instead of 2.
+- Stream autopilot can review and write titles with Claude Code instead of local Qwen, with per-run transcript-sharing consent.
+- YouTube range imports fetch the video in parallel 10 MB pieces instead of one throttled stream, and encode with NVENC when an NVIDIA encoder is available; a one-hour part now takes minutes instead of about half an hour.
 
 ## 0.1.0 — initial public source
 

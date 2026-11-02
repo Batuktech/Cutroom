@@ -4,9 +4,9 @@ Stream autopilot turns a finished YouTube VOD into short vertical clips with no 
 
 1. Cutroom reads the stream length and splits it into one-hour parts. Each part becomes its own project named `… · Part N/M`.
 2. Each part is transcribed with Whisper large-v3 on this computer.
-3. Local Qwen3-8B reviews each transcript in Reviewed mode and proposes 15–60 second moments.
+3. The reviewer you choose, local Qwen3-8B by default or [Claude Code](#review-with-claude-code), reviews each transcript in Reviewed mode and proposes 15–60 second moments.
 4. Across the whole stream, Cutroom ranks the reviewed candidates by their evidence-backed editorial score. Only candidates scoring at least 60/100 with clear hooks, payoffs and standalone clarity qualify. It can return fewer clips than requested, including zero; it does not fill missing slots with uncertain passages or weaker parts. Repeated wording across parts is filtered.
-5. Each pick becomes a 9:16 clip with face framing and burned-in captions. Local Qwen writes a title and description. The clip is rendered at 1080×1920 and, if you opted in, uploaded directly to YouTube Shorts and TikTok.
+5. Each pick becomes a 9:16 clip with face framing and burned-in captions. The same reviewer writes a title and description. The clip is rendered at 1080×1920 and, if you opted in, uploaded directly to YouTube Shorts and TikTok.
 
 Open **Streams** in the sidebar to start a run and follow its parts, clips, and post links.
 
@@ -14,9 +14,18 @@ Open **Streams** in the sidebar to start a run and follow its parts, clips, and 
 
 - The YouTube downloader and FFmpeg (`npm run setup:ai`).
 - Whisper Large v3 installed in Settings.
-- The local Qwen runtime and model ([Qwen setup](qwen-setup.md)).
+- The local Qwen runtime and model ([Qwen setup](qwen-setup.md)), or a signed-in [Claude Code](byok.md#claude-code-local-cli) when Claude reviews.
 
-Everything runs in the single local queue, one job at a time. On CPU, large-v3 can take several hours per one-hour part. Streams up to 24 hours are accepted; live or still-processing broadcasts are refused until YouTube finishes them.
+Everything runs in the single local queue, one job at a time. Downloading a one-hour part usually takes a few minutes, depending on the connection; it is cut and re-encoded with NVENC on an NVIDIA GPU and with x264 elsewhere. On CPU, large-v3 can take several hours per one-hour part; with [GPU transcription](installation.md#faster-transcription-on-an-nvidia-gpu-linux) it usually takes minutes. Streams up to 24 hours are accepted; live or still-processing broadcasts are refused until YouTube finishes them.
+
+## Review with Claude Code
+
+Under **Find clips and write titles with**, choose **Claude Code · your Claude sign-in** to review with your own signed-in Claude Code instead of local Qwen. It needs no API key and runs on your Claude plan; setup is in [Claude Code (local CLI)](byok.md#claude-code-local-cli).
+
+- Each run asks for separate consent, because every part's transcript text and timestamps go to Anthropic. The video and audio stay on this computer, and Whisper transcription still runs locally.
+- Each part makes up to about 20 requests with the default `opus` model. Those count toward your Claude plan's usage limits; a reached limit fails that part, and **Retry failed steps** continues from the review.
+- Claude is usually much faster than local Qwen on a laptop GPU, and stronger in languages other than English and Chinese. The same scoring threshold applies, so a run can still produce no clips.
+- If Claude Code signs out mid-run, the part fails with a sign-in message. Sign in with `claude` in a terminal, then retry.
 
 ## Publishing accounts
 
@@ -50,4 +59,4 @@ If Cutroom stops mid-run, unfinished parts are marked failed. Retry continues fr
 
 AI picks are editorial suggestions, not a guarantee of views. Review what was published.
 
-The [scoring rubric](ai-suggestions.md#scoring-and-boundary-review) evaluates transcript text, not faces, vocal emotion or view predictions. Stream autopilot still uses local Qwen. Existing saved clips are preserved. Old unscored reviews do not qualify for newly selected autopilot clips; analyze the part again to obtain a scored review. A transcript edit also invalidates selection from its previous review. The threshold is a product heuristic that needs evaluation against your own editorial preferences, not a measured success rate.
+The [scoring rubric](ai-suggestions.md#scoring-and-boundary-review) evaluates transcript text, not faces, vocal emotion or view predictions. Stream autopilot uses local Qwen unless you choose Claude Code for that run. Existing saved clips are preserved. Old unscored reviews do not qualify for newly selected autopilot clips; analyze the part again to obtain a scored review. A transcript edit also invalidates selection from its previous review. The threshold is a product heuristic that needs evaluation against your own editorial preferences, not a measured success rate.

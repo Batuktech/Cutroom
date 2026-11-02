@@ -1,0 +1,4 @@
+# Optional: NVIDIA libraries that let Whisper run on an NVIDIA GPU (Linux, CUDA 12 driver).
+# About 2 GB. Without them, transcription runs on the CPU.
+nvidia-cublas-cu12==12.*
+nvidia-cudnn-cu12==9.*
