@@ -26,6 +26,8 @@ describe("stream planning", () => {
   it("reviews locally by default and needs separate consent before Claude reads transcripts", () => {
     const url = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
     expect(streamRequestSchema.parse({ url }).reviewer).toBe("local");
+    expect(streamRequestSchema.parse({ url }).tiktokMode).toBe("draft");
+    expect(streamRequestSchema.safeParse({ url, tiktokMode: "scheduled" }).success).toBe(false);
     expect(streamRequestSchema.safeParse({ url, reviewer: "claude-code" }).success).toBe(false);
     // Publishing consent does not cover sending transcripts to Anthropic.
     expect(streamRequestSchema.safeParse({ url, reviewer: "claude-code", platforms: ["youtube"], publishConsent: true }).success).toBe(false);

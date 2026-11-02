@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Check, CircleDashed, ExternalLink, LoaderCircle, RotateCcw, Send, X } from "lucide-react";
 import type { Health } from "../../shared/types";
-import type { AutopostPlatform, SocialAccountStatus, StreamPart, StreamRecord, StreamRequest, StreamReviewer } from "../../shared/streams";
+import type { AutopostPlatform, SocialAccountStatus, StreamPart, StreamRecord, StreamRequest, StreamReviewer, TiktokMode } from "../../shared/streams";
 import { streamLanguages } from "../../shared/streams";
 import { sourceTime } from "../../shared/youtube-range";
 import { api, post } from "../lib/api";
@@ -26,7 +26,7 @@ export function Streams({ health, openProject, openSettings, notify }: {
   const [accounts, setAccounts] = useState<SocialAccountStatus[]>([]);
   const [loadError, setLoadError] = useState("");
   const [form, setForm] = useState<Omit<StreamRequest, "interests">>({ url: "", language: "auto", topClips: 5, visibility: "public", platforms: [],
-    reviewer: "local", publishConsent: false, cloudConsent: false });
+    tiktokMode: "draft", reviewer: "local", publishConsent: false, cloudConsent: false });
   const ai = useAIProviders();
   const claude = ai.statuses.find(s => s.provider === "claude-code");
   const [busy, setBusy] = useState(false), [error, setError] = useState("");
@@ -70,6 +70,10 @@ export function Streams({ health, openProject, openSettings, notify }: {
       `${stream.settings.platforms.map(p => platformName[p]).join(" and ")} (${stream.settings.visibility})?`)) return;
     try { await post(`/streams/${stream.id}/${action}`); await load(); }
     catch (e) { notify((e as Error).message, true); }
+  }
+  async function copyCaption(caption: string) {
+    try { await navigator.clipboard.writeText(caption); notify("Caption copied. Paste it into the TikTok draft."); }
+    catch { notify("Copying failed. Select the caption in the project's social copy instead.", true); }
   }
   const togglePlatform = (p: AutopostPlatform) =>
     setForm(f => ({ ...f, platforms: f.platforms.includes(p) ? f.platforms.filter(x => x !== p) : [...f.platforms, p] }));
@@ -133,7 +137,16 @@ export function Streams({ health, openProject, openSettings, notify }: {
                 <option value="private">Private (only you)</option>
               </select>
             </label>
-            <p className="suggestion-note">Unverified Google API projects and unaudited TikTok apps can only post privately. YouTube's default quota allows about 6 uploads a day.</p>
+            {form.platforms.includes("tiktok") && <label className="field-label">TikTok
+              <select value={form.tiktokMode} onChange={e => setForm(f => ({ ...f, tiktokMode: e.target.value as TiktokMode }))}>
+                <option value="draft">Send to my TikTok inbox as drafts (I post them)</option>
+                <option value="direct">Post directly</option>
+              </select>
+            </label>}
+            <p className="suggestion-note">Unverified Google API projects can only upload privately, and YouTube's default quota allows about 6 uploads a day.
+              {form.platforms.includes("tiktok") && (form.tiktokMode === "draft"
+                ? " TikTok drafts keep at most 5 waiting per day; open each one in TikTok, paste the caption and choose who can watch."
+                : " Until TikTok audits the app, direct posts are private and the TikTok account itself must be private.")}</p>
             <label className="social-check">
               <input type="checkbox" checked={form.publishConsent} onChange={e => setForm(f => ({ ...f, publishConsent: e.target.checked }))} />
               <span>Publish the top {form.topClips} clip{form.topClips === 1 ? "" : "s"} to the selected accounts without asking again for this stream.</span>
@@ -157,7 +170,7 @@ export function Streams({ health, openProject, openSettings, notify }: {
         <header>
           <div>
             <h3>{stream.title}</h3>
-            <p>{stream.duration ? `${sourceTime(stream.duration)} · ` : ""}{stream.parts.length || "–"} part{stream.parts.length === 1 ? "" : "s"} · top {stream.settings.topClips}{stream.settings.reviewer === "claude-code" ? " · Claude review" : ""}{stream.settings.platforms.length ? ` · ${stream.settings.visibility} on ${stream.settings.platforms.map(p => platformName[p]).join(", ")}` : " · no auto-posting"}</p>
+            <p>{stream.duration ? `${sourceTime(stream.duration)} · ` : ""}{stream.parts.length || "–"} part{stream.parts.length === 1 ? "" : "s"} · top {stream.settings.topClips}{stream.settings.reviewer === "claude-code" ? " · Claude review" : ""}{stream.settings.platforms.length ? ` · ${stream.settings.visibility} on ${stream.settings.platforms.map(p => p === "tiktok" && stream.settings.tiktokMode === "draft" ? "TikTok drafts" : platformName[p]).join(", ")}` : " · no auto-posting"}</p>
           </div>
           <span className={`stream-status status-${stream.status}`}>{running(stream) && <LoaderCircle size={14} className="spin" aria-hidden />}{stream.status}</span>
         </header>
@@ -179,6 +192,7 @@ export function Streams({ health, openProject, openSettings, notify }: {
             {clip.targets.map(t => <span key={t.platform} className={`post-state post-${t.state}`}>
               {platformName[t.platform]}: {t.url ? <a href={t.url} target="_blank" rel="noreferrer">{t.state}<ExternalLink size={12} aria-hidden /></a> : t.state}
               {t.message && <small> · {t.message}</small>}
+              {t.caption && <button type="button" className="text-link" onClick={() => void copyCaption(t.caption!)}>Copy caption</button>}
             </span>)}
           </div>)}
         </div>}

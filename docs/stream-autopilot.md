@@ -43,11 +43,14 @@ Each upload costs 1,600 of the default 10,000 daily quota units, so about six up
 
 ### TikTok
 
-1. Create a TikTok developer app on the **Desktop** platform with Login Kit and the Content Posting API (Direct Post).
+1. Create a TikTok developer app on the **Desktop** platform with Login Kit and the Content Posting API.
 2. Register the redirect URI shown in Settings, for example `http://127.0.0.1:4318/api/social/tiktok/callback`.
-3. Request the `user.info.basic` and `video.publish` scopes, then paste the client key and secret in Settings.
+3. Request the `user.info.basic`, `video.upload` and `video.publish` scopes, then paste the client key and secret in Settings. If you added `video.upload` after connecting, connect TikTok again.
 
-Until TikTok audits the app, it can only post privately. When a run asks for Public, Cutroom retries the post as private (only you) and says so beside the clip. TikTok may also require the account itself to be private (**Settings and privacy → Privacy → Private account**); otherwise the upload is refused.
+Each stream chooses how clips reach TikTok:
+
+- **Drafts** (the default) send each clip to your TikTok inbox. Open the TikTok notification, paste the caption (use **Copy caption** beside the clip) and choose who can watch. Your account can stay public, and the app does not need TikTok's audit. TikTok keeps at most 5 drafts waiting per day; further clips fail with a message until you post or delete some.
+- **Post directly** publishes without opening TikTok. Until TikTok audits the app, posts are private only and the account itself must be private (**Settings and privacy → Privacy → Private account**). When a run asks for Public, Cutroom retries as private and says so beside the clip. TikTok's [content sharing guidelines](https://developers.tiktok.com/doc/content-sharing-guidelines) also expect a manual privacy choice for each post, so an audit for unattended posting is unlikely to pass.
 
 ## Consent, duplicates, and recovery
 

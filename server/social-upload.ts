@@ -54,7 +54,8 @@ const tiktokMessages: Record<string, string> = {
   unaudited_client_can_only_post_to_private_accounts: "Your TikTok app is not audited yet, so it can only post to a private account. In TikTok, open Settings and privacy → Privacy and turn on Private account, or finish TikTok's app audit.",
   spam_risk_too_many_posts: "TikTok's daily post limit for this account was reached.",
   reached_active_user_cap: "Your TikTok app reached its daily posting quota.",
-  scope_not_authorized: "The TikTok connection lacks video.publish. Connect TikTok again in Settings.",
+  scope_not_authorized: "The TikTok connection lacks this permission. Add video.upload and video.publish to the TikTok app, then connect TikTok again in Settings.",
+  spam_risk_too_many_pending_share: "TikTok allows 5 drafts waiting in your inbox per day. Post or delete the drafts in TikTok, then retry.",
   access_token_invalid: "The TikTok sign-in expired. Connect TikTok again in Settings.",
   rate_limit_exceeded: "TikTok rate limit reached. Try again in a minute.",
   privacy_level_option_mismatch: "This TikTok account does not allow the chosen visibility.",
@@ -75,6 +76,53 @@ export function tiktokChunks(size: number) {
   const count = Math.max(1, Math.floor(size / chunk));
   return { chunkSize: count === 1 ? size : chunk, count };
 }
+/** The caption TikTok shows: title, description and hashtags. Drafts cannot carry it, so the user pastes it in the app. */
+export function tiktokCaption(meta: UploadMeta) {
+  return Array.from([meta.title, meta.description, meta.tags.join(" ")].filter(Boolean).join("\n\n")).slice(0, 2200).join("");
+}
+const tiktokSession = z.object({ publish_id: z.string().min(1).max(64), upload_url: z.string().url().max(2048) });
+async function sendTiktokChunks(session: unknown, blob: Blob, size: number, signal?: AbortSignal) {
+  const init = tiktokSession.safeParse(session);
+  if (!init.success || new URL(init.data.upload_url).protocol !== "https:") throw new SocialError("TikTok returned an invalid upload session.", true);
+  const { chunkSize, count } = tiktokChunks(size);
+  try {
+    for (let i = 0; i < count; i++) {
+      const start = i * chunkSize, end = i === count - 1 ? size : start + chunkSize;
+      const response = await requestJson(init.data.upload_url, { method: "PUT", body: blob.slice(start, end), signal, timeout: 20 * 60_000,
+        headers: { "Content-Type": "video/mp4", "Content-Range": `bytes ${start}-${end - 1}/${size}` } }, "TikTok");
+      if (response.status >= 400) throw new Error();
+    }
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    throw new SocialError("TikTok did not confirm the upload. Check the TikTok app before retrying.", false);
+  }
+  return init.data.publish_id;
+}
+const tiktokStatus = z.object({ status: z.string(), fail_reason: z.string().optional(), publicaly_available_post_id: z.array(z.union([z.string(), z.number()])).optional() });
+/** Processing continues on TikTok's side; poll for up to three minutes. Undefined means it is still processing. */
+async function waitForTiktok(token: string, publishId: string, done: string[], signal?: AbortSignal) {
+  for (let attempt = 0; attempt < 36; attempt++) {
+    await delay(5000, undefined, { signal });
+    let status;
+    try { status = tiktokStatus.safeParse(await tiktok("/v2/post/publish/status/fetch/", token, { publish_id: publishId }, signal)).data; }
+    catch (error) { if (signal?.aborted) throw error; continue; }
+    if (status && done.includes(status.status)) return status;
+    if (status?.status === "FAILED")
+      throw new SocialError(`TikTok could not process the video${status.fail_reason ? ` (${status.fail_reason.slice(0, 60)})` : ""}.`, true);
+  }
+}
+/** Sends the clip to the creator's TikTok inbox. They add the caption and choose who can watch in the TikTok app. */
+export async function uploadTiktokDraft(file: string, _meta: UploadMeta, signal?: AbortSignal): Promise<UploadReceipt> {
+  const { size, blob } = await videoFile(file);
+  const token = await socialAccounts.accessToken("tiktok", signal);
+  const { chunkSize, count } = tiktokChunks(size);
+  const publishId = await sendTiktokChunks(await tiktok("/v2/post/publish/inbox/video/init/", token, {
+    source_info: { source: "FILE_UPLOAD", video_size: size, chunk_size: chunkSize, total_chunk_count: count },
+  }, signal), blob, size, signal);
+  const status = await waitForTiktok(token, publishId, ["SEND_TO_USER_INBOX", "PUBLISH_COMPLETE"], signal);
+  return { remoteId: publishId, message: status ? "Sent to your TikTok inbox. Open the TikTok notification, paste the caption and post."
+    : "Uploaded. TikTok is still processing it; the draft will appear in your TikTok inbox." };
+}
 export async function uploadTiktok(file: string, meta: UploadMeta, signal?: AbortSignal): Promise<UploadReceipt> {
   const { size, blob } = await videoFile(file);
   const token = await socialAccounts.accessToken("tiktok", signal);
@@ -85,7 +133,7 @@ export async function uploadTiktok(file: string, meta: UploadMeta, signal?: Abor
   if (!creator.data.privacy_level_options.includes(privacy)) throw new SocialError(tiktokMessages.privacy_level_option_mismatch, true);
   if (meta.duration > creator.data.max_video_post_duration_sec) throw new SocialError("This clip is longer than TikTok allows for the account.", true);
   const { chunkSize, count } = tiktokChunks(size);
-  const title = Array.from([meta.title, meta.description, meta.tags.join(" ")].filter(Boolean).join("\n\n")).slice(0, 2200).join("");
+  const title = tiktokCaption(meta);
   const initialise = () => tiktok("/v2/post/publish/video/init/", token, {
     post_info: { title, privacy_level: privacy, disable_duet: false, disable_stitch: false, disable_comment: false, video_cover_timestamp_ms: 1000 },
     source_info: { source: "FILE_UPLOAD", video_size: size, chunk_size: chunkSize, total_chunk_count: count },
@@ -101,35 +149,12 @@ export async function uploadTiktok(file: string, meta: UploadMeta, signal?: Abor
   }
   const privateNote = privacy !== (meta.visibility === "public" ? "PUBLIC_TO_EVERYONE" : "SELF_ONLY")
     ? "Posted as private (only you) because the TikTok app is not audited yet." : undefined;
-  const init = z.object({ publish_id: z.string().min(1).max(64), upload_url: z.string().url().max(2048) }).safeParse(session);
-  if (!init.success || new URL(init.data.upload_url).protocol !== "https:") throw new SocialError("TikTok returned an invalid upload session.", true);
-  const publishId = init.data.publish_id;
-  try {
-    for (let i = 0; i < count; i++) {
-      const start = i * chunkSize, end = i === count - 1 ? size : start + chunkSize;
-      const response = await requestJson(init.data.upload_url, { method: "PUT", body: blob.slice(start, end), signal, timeout: 20 * 60_000,
-        headers: { "Content-Type": "video/mp4", "Content-Range": `bytes ${start}-${end - 1}/${size}` } }, "TikTok");
-      if (response.status >= 400) throw new Error();
-    }
-  } catch (error) {
-    if (signal?.aborted) throw error;
-    throw new SocialError("TikTok did not confirm the upload. Check the TikTok app before retrying.", false);
-  }
-  // Publishing continues on TikTok's side; poll briefly for a final state.
-  for (let attempt = 0; attempt < 36; attempt++) {
-    await delay(5000, undefined, { signal });
-    let status;
-    try {
-      status = z.object({ status: z.string(), fail_reason: z.string().optional(), publicaly_available_post_id: z.array(z.union([z.string(), z.number()])).optional() })
-        .safeParse(await tiktok("/v2/post/publish/status/fetch/", token, { publish_id: publishId }, signal)).data;
-    } catch (error) { if (signal?.aborted) throw error; continue; }
-    if (status?.status === "PUBLISH_COMPLETE") {
-      const id = status.publicaly_available_post_id?.[0];
-      return { remoteId: publishId, url: id ? `https://www.tiktok.com/@${creator.data.creator_username}/video/${id}` : undefined,
-        message: privateNote ?? (id ? undefined : "Published. TikTok may still be reviewing it before it appears publicly.") };
-    }
-    if (status?.status === "FAILED")
-      throw new SocialError(`TikTok could not publish the video${status.fail_reason ? ` (${status.fail_reason.slice(0, 60)})` : ""}.`, true);
+  const publishId = await sendTiktokChunks(session, blob, size, signal);
+  const status = await waitForTiktok(token, publishId, ["PUBLISH_COMPLETE"], signal);
+  if (status) {
+    const id = status.publicaly_available_post_id?.[0];
+    return { remoteId: publishId, url: id ? `https://www.tiktok.com/@${creator.data.creator_username}/video/${id}` : undefined,
+      message: privateNote ?? (id ? undefined : "Published. TikTok may still be reviewing it before it appears publicly.") };
   }
   return { remoteId: publishId, message: `Uploaded. TikTok is still processing it; check the TikTok app.${privateNote ? ` ${privateNote}` : ""}` };
 }

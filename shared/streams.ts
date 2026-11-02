@@ -6,6 +6,8 @@ export type AutopostPlatform = typeof autopostPlatforms[number];
 /** Who finds clips and writes titles. Claude Code runs on the user's own Claude sign-in. */
 export const streamReviewers = ["local", "claude-code"] as const;
 export type StreamReviewer = typeof streamReviewers[number];
+export const tiktokModes = ["draft", "direct"] as const;
+export type TiktokMode = typeof tiktokModes[number];
 export const STREAM_PART_SECONDS = 3600;
 export const streamLanguages = ["auto", "en", "mn", "es", "fr", "de", "ja", "ko", "zh", "ru", "pt", "it", "ar", "hi", "tr"] as const;
 
@@ -15,6 +17,8 @@ export const streamRequestSchema = z.object({
   topClips: z.number().int().min(1).max(10).default(5),
   visibility: z.enum(["public", "private"]).default("public"),
   platforms: z.array(z.enum(autopostPlatforms)).max(2).default([]),
+  // Drafts land in the creator's TikTok inbox; direct posts need TikTok's app audit to be public.
+  tiktokMode: z.enum(tiktokModes).default("draft"),
   interests: z.array(z.enum(["interesting", "funny", "educational", "story", "surprising", "debate", "emotional", "reactions", "quotes"])).min(1).max(9)
     .default(["interesting", "funny", "story", "reactions"]),
   reviewer: z.enum(streamReviewers).default("local"),
@@ -45,6 +49,8 @@ export interface AutopostTarget {
   remoteId?: string;
   url?: string;
   message?: string;
+  /** TikTok drafts carry no caption, so it is kept here for the user to paste. */
+  caption?: string;
 }
 export interface AutopostClip {
   id: string;
@@ -67,8 +73,10 @@ export interface StreamRecord {
   updatedAt: string;
   status: StreamStatus;
   message?: string;
-  settings: Omit<StreamRequest, "url" | "publishConsent" | "cloudConsent" | "reviewer"> & {
+  settings: Omit<StreamRequest, "url" | "publishConsent" | "cloudConsent" | "reviewer" | "tiktokMode"> & {
     reviewer?: StreamReviewer;
+    /** Streams created before drafts existed posted directly. */
+    tiktokMode?: TiktokMode;
     /** "reviewed" is set when the user asks to post clips that scored under the autopilot bar. */
     qualityBar?: "strict" | "reviewed";
   };

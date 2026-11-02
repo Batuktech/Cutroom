@@ -157,7 +157,7 @@ export class SocialAccounts {
         code_challenge: createHash("sha256").update(verifier).digest("base64url"), code_challenge_method: "S256" }).toString();
     } else {
       // TikTok's desktop Login Kit expects a hex-encoded SHA-256 challenge.
-      url.search = new URLSearchParams({ client_key: app.id, redirect_uri: redirect, response_type: "code", scope: "user.info.basic,video.publish", state,
+      url.search = new URLSearchParams({ client_key: app.id, redirect_uri: redirect, response_type: "code", scope: "user.info.basic,video.upload,video.publish", state,
         code_challenge: createHash("sha256").update(verifier).digest("hex"), code_challenge_method: "S256" }).toString();
     }
     return { url: url.href };
