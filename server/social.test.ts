@@ -2,7 +2,7 @@ import path from "node:path";
 import { mkdir, mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SocialAccounts, SocialError, socialAccounts } from "./social-accounts.js";
-import { tiktokChunks, uploadYoutube } from "./social-upload.js";
+import { tiktokChunks, uploadTiktok, uploadYoutube } from "./social-upload.js";
 
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 const env = { CUTROOM_PORT: "4318", YOUTUBE_CLIENT_ID: "synthetic-client-id", YOUTUBE_CLIENT_SECRET: "synthetic-secret",
@@ -113,5 +113,21 @@ describe("platform uploads", () => {
     expect(await uploadYoutube(file, meta)).toEqual({ remoteId: "abcDEF12345", url: "https://youtube.com/shorts/abcDEF12345" });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(json({}, 200, { Location: "https://attacker.example/upload" })));
     expect(await uploadYoutube(file, meta).catch(e => e)).toMatchObject({ definite: true });
+  });
+  it("falls back to a private TikTok post when the app is not audited", async () => {
+    const file = path.join(await scratch(), "clip.mp4");
+    await writeFile(file, Buffer.alloc(1024));
+    vi.spyOn(socialAccounts, "accessToken").mockResolvedValue("access");
+    const creator = { data: { creator_username: "synthetic", privacy_level_options: ["PUBLIC_TO_EVERYONE", "SELF_ONLY"], max_video_post_duration_sec: 600 }, error: { code: "ok" } };
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(json(creator))
+      .mockResolvedValueOnce(json({ error: { code: "unaudited_client_can_only_post_to_private_accounts" } }, 403))
+      .mockResolvedValueOnce(json({ data: { publish_id: "p1", upload_url: "https://upload.example/video" }, error: { code: "ok" } }))
+      .mockRejectedValueOnce(new Error("socket hang up"));
+    vi.stubGlobal("fetch", fetchMock);
+    const meta = { title: "Clip", description: "Synthetic", tags: [], visibility: "public" as const, duration: 30 };
+    expect(await uploadTiktok(file, meta).catch(e => e)).toMatchObject({ definite: false });
+    const privacy = (call: number) => JSON.parse(fetchMock.mock.calls[call][1].body).post_info.privacy_level;
+    expect([privacy(1), privacy(2)]).toEqual(["PUBLIC_TO_EVERYONE", "SELF_ONLY"]);
   });
 });

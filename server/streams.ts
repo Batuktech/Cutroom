@@ -15,7 +15,7 @@ import { clipSchema } from "./domain.js";
 import { youtubeUrl } from "../shared/youtube.js";
 import { suggestionOptionsSchema } from "../shared/suggestions.js";
 import { copyOptionsSchema } from "../shared/publishing.js";
-import { autopilotEligible } from "../shared/clip-quality.js";
+import { autopilotEligible, reviewedClip } from "../shared/clip-quality.js";
 import { rankCandidates, streamParts, type AutopostClip, type AutopostPlatform, type StreamPart, type StreamRecord, type StreamRequest } from "../shared/streams.js";
 
 // Records saved before the reviewer choice existed used local Qwen.
@@ -196,11 +196,12 @@ async function publishStream(id: string, context: JobContext) {
 async function publishClips(id: string, context: JobContext) {
   const stream = getStream(id);
   const needed = stream.settings.topClips - stream.clips.length;
+  const eligible = stream.settings.qualityBar === "reviewed" ? reviewedClip : autopilotEligible;
   if (needed > 0) {
     const pool = stream.parts.filter(p => p.stage === "ready" && p.projectId).flatMap(part => {
       const project = getProject(part.projectId!);
       if (!project.suggestions || project.suggestions.sourceHash !== transcriptHash(project)) return [];
-      return project.suggestions.candidates.filter(autopilotEligible).map((candidate, order) => ({ ...candidate, part: part.index, order, projectId: project.id, sourceHash: project.suggestions!.sourceHash }));
+      return project.suggestions.candidates.filter(eligible).map((candidate, order) => ({ ...candidate, part: part.index, order, projectId: project.id, sourceHash: project.suggestions!.sourceHash }));
     }).filter(c => !stream.clips.some(clip => clip.projectId === c.projectId && Math.abs(clip.start - c.start) < .1));
     for (const candidate of rankCandidates(pool, needed)) {
       const clip = pickedClip(candidate.start, candidate.end, candidate.title);
@@ -272,7 +273,9 @@ async function publishClips(id: string, context: JobContext) {
   const posted = targets.filter(t => t.state === "submitted").length, attention = targets.length - posted;
   await change(id, s => {
     s.status = "completed";
-    s.message = !final.clips.length ? "No reviewed clips met the quality threshold. Open the part projects to inspect suggestions; nothing was posted."
+    s.message = !final.clips.length ? (s.settings.qualityBar === "reviewed"
+      ? "No clip passed review. Open the part projects to inspect suggestions; nothing was posted."
+      : "No reviewed clips met the quality threshold. Open the part projects to inspect suggestions, or post the reviewed clips anyway; nothing was posted.")
       : `${final.clips.length} clip${final.clips.length === 1 ? "" : "s"} ready` +
         (targets.length ? ` · ${posted} post${posted === 1 ? "" : "s"} published${attention ? ` · ${attention} need attention` : ""}` : "") +
         (s.parts.some(p => p.stage !== "ready") ? " · some parts failed" : "");
@@ -297,6 +300,16 @@ export async function cancelStream(id: string) {
     for (const part of s.parts) if (!["ready", "failed"].includes(part.stage)) { part.stage = "cancelled"; part.message = "Cancelled."; }
     for (const clip of s.clips) for (const t of clip.targets) if (t.state === "pending") { t.state = "failed"; t.message = "Cancelled before upload."; }
   });
+  return getStream(id);
+}
+/** Posts clips that passed review but scored under the autopilot bar, once the user has seen the result and asks for it. */
+export async function publishReviewed(id: string) {
+  const stream = getStream(id);
+  if (streamJobs(stream).length || stream.status !== "completed")
+    throw Object.assign(new Error("Wait until the stream has finished."), { status: 409 });
+  if (!stream.settings.platforms.length) throw Object.assign(new Error("This stream has no accounts to post to."), { status: 409 });
+  await change(id, s => { s.settings.qualityBar = "reviewed"; s.message = undefined; });
+  queuePublish(id);
   return getStream(id);
 }
 /** Continues failed or cancelled work. Unconfirmed ("unknown") uploads are never retried here. */

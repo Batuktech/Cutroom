@@ -5,7 +5,7 @@ Stream autopilot turns a finished YouTube VOD into short vertical clips with no 
 1. Cutroom reads the stream length and splits it into one-hour parts. Each part becomes its own project named `… · Part N/M`.
 2. Each part is transcribed with Whisper large-v3 on this computer.
 3. The reviewer you choose, local Qwen3-8B by default or [Claude Code](#review-with-claude-code), reviews each transcript in Reviewed mode and proposes 15–60 second moments.
-4. Across the whole stream, Cutroom ranks the reviewed candidates by their evidence-backed editorial score. Only candidates scoring at least 60/100 with clear hooks, payoffs and standalone clarity qualify. It can return fewer clips than requested, including zero; it does not fill missing slots with uncertain passages or weaker parts. Repeated wording across parts is filtered.
+4. Across the whole stream, Cutroom ranks the reviewed candidates by their evidence-backed editorial score. Only candidates scoring at least 60/100 with clear hooks, payoffs and standalone clarity qualify. It can return fewer clips than requested, including zero; it does not fill missing slots with uncertain passages or weaker parts. Repeated wording across parts is filtered. If a finished stream posted fewer clips than requested, **Post reviewed clips anyway** asks for confirmation and then posts, up to the same limit, the clips that passed the reviewer's context, ending, appeal and clarity checks but scored under 60. Candidates that were never reviewed are still skipped.
 5. Each pick becomes a 9:16 clip with face framing and burned-in captions. The same reviewer writes a title and description. The clip is rendered at 1080×1920 and, if you opted in, uploaded directly to YouTube Shorts and TikTok.
 
 Open **Streams** in the sidebar to start a run and follow its parts, clips, and post links.
@@ -47,7 +47,7 @@ Each upload costs 1,600 of the default 10,000 daily quota units, so about six up
 2. Register the redirect URI shown in Settings, for example `http://127.0.0.1:4318/api/social/tiktok/callback`.
 3. Request the `user.info.basic` and `video.publish` scopes, then paste the client key and secret in Settings.
 
-Until TikTok audits the app, it can only post privately. Choose **Private** for those runs or the upload is refused.
+Until TikTok audits the app, it can only post privately. When a run asks for Public, Cutroom retries the post as private (only you) and says so beside the clip. TikTok may also require the account itself to be private (**Settings and privacy → Privacy → Private account**); otherwise the upload is refused.
 
 ## Consent, duplicates, and recovery
 

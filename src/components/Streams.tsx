@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, Check, CircleDashed, ExternalLink, LoaderCircle, RotateCcw, X } from "lucide-react";
+import { AlertCircle, Check, CircleDashed, ExternalLink, LoaderCircle, RotateCcw, Send, X } from "lucide-react";
 import type { Health } from "../../shared/types";
 import type { AutopostPlatform, SocialAccountStatus, StreamPart, StreamRecord, StreamRequest, StreamReviewer } from "../../shared/streams";
 import { streamLanguages } from "../../shared/streams";
@@ -65,7 +65,9 @@ export function Streams({ health, openProject, openSettings, notify }: {
     } catch (e) { setError((e as Error).message); }
     finally { setBusy(false); }
   }
-  async function act(stream: StreamRecord, action: "cancel" | "retry") {
+  async function act(stream: StreamRecord, action: "cancel" | "retry" | "publish-reviewed") {
+    if (action === "publish-reviewed" && !window.confirm(`Post up to ${stream.settings.topClips} clips that passed review but scored under the autopilot bar to ` +
+      `${stream.settings.platforms.map(p => platformName[p]).join(" and ")} (${stream.settings.visibility})?`)) return;
     try { await post(`/streams/${stream.id}/${action}`); await load(); }
     catch (e) { notify((e as Error).message, true); }
   }
@@ -185,6 +187,9 @@ export function Streams({ health, openProject, openSettings, notify }: {
           {["failed", "cancelled", "completed"].includes(stream.status) &&
             (stream.parts.some(p => p.stage !== "ready") || stream.clips.some(c => c.targets.some(t => t.state === "failed")) || !stream.parts.length) &&
             <Button variant="secondary" size="small" onClick={() => void act(stream, "retry")}><RotateCcw size={14} />Retry failed steps</Button>}
+          {stream.status === "completed" && stream.settings.qualityBar !== "reviewed" && stream.settings.platforms.length > 0 &&
+            stream.clips.length < stream.settings.topClips && stream.parts.some(p => p.candidates) &&
+            <Button variant="secondary" size="small" onClick={() => void act(stream, "publish-reviewed")}><Send size={14} />Post reviewed clips anyway</Button>}
           {stream.clips.some(c => c.targets.some(t => t.state === "unknown")) && <p className="suggestion-note">Unconfirmed uploads are never resent automatically. Check the platform first.</p>}
         </div>
       </article>)}
