@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cloudProviders, providerDetails } from "../shared/ai-providers.js";
+import { apiKeyProviders, providerDetails } from "../shared/ai-providers.js";
 import { requestAI, type AIRequest } from "./ai-providers.js";
 const request: AIRequest = { provider: "openai", model: "test-model", apiKey: "sk-synthetic-secret", instruction: "Select clips", input: "Synthetic transcript", schema: { type: "object" } };
 const answer = { candidates: [] };
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe("cloud transports", () => {
-  it.each(cloudProviders)("uses %s structured output and redacts credentials from URLs", async provider => {
+  it.each(apiKeyProviders)("uses %s structured output and redacts credentials from URLs", async provider => {
     vi.stubEnv("CUTROOM_CUSTOM_AI_BASE_URL", "https://custom-provider.example/v1");
     const payload = provider === "openai" ? { status: "completed", output: [{ type: "message", content: [{ type: "output_text", text: JSON.stringify(answer) }] }], usage: { input_tokens: 12, output_tokens: 8 } }
       : provider === "anthropic" ? { stop_reason: "end_turn", content: [{ type: "text", text: JSON.stringify(answer) }], usage: { input_tokens: 12, output_tokens: 8 } }

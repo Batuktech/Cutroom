@@ -7,6 +7,7 @@
 - Per-analysis transcript-sharing confirmation, editable model IDs, request caps, partial results, and reported token usage.
 - Session-only key management, optional environment keys, cancellation, and provider-error redaction.
 - Cloud setup/billing documentation and synthetic provider/API tests without paid requests.
+- Claude Code (local CLI) provider: clip review and social copy can run through the user's own signed-in Claude Code with tools and customizations off, without Cutroom handling Claude credentials.
 
 ## 0.1.0 — initial public source
 

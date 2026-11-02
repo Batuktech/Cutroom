@@ -1,8 +1,11 @@
-export const cloudProviders = [
+export const apiKeyProviders = [
   "openai", "anthropic", "openrouter", "zai", "moonshot", "deepseek", "gemini",
   "groq", "mistral", "xai", "together", "fireworks", "cerebras", "sambanova",
   "dashscope", "siliconflow", "custom",
 ] as const;
+// Claude Code signs in through Anthropic's own flow; Cutroom never sees its credentials.
+export const cloudProviders = [...apiKeyProviders, "claude-code"] as const;
+export type ApiKeyProvider = typeof apiKeyProviders[number];
 export type CloudProvider = typeof cloudProviders[number];
 export type AIProvider = "local" | CloudProvider;
 export type OutputFormat = "json_schema" | "json_object";
@@ -28,12 +31,18 @@ export const providerDetails: Record<AIProvider, ProviderDetails> = {
   sambanova: { name: "SambaNova", model: "", keyUrl: "https://cloud.sambanova.ai", envKey: "SAMBANOVA_API_KEY", endpoint: "https://api.sambanova.ai/v1/chat/completions", format: "json_schema", note: "Schema output is model-dependent; Cutroom validates every proposal locally." },
   dashscope: { name: "Qwen · Alibaba Cloud", model: "qwen-plus", keyUrl: "https://www.alibabacloud.com/help/en/model-studio/get-api-key", envKey: "DASHSCOPE_API_KEY", endpoint: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions", format: "json_object", note: "Singapore API key. Thinking is disabled for JSON output; choose a model that supports non-thinking mode. Other regions or workspace URLs use Custom." },
   siliconflow: { name: "SiliconFlow", model: "", keyUrl: "https://cloud.siliconflow.com/account/ak", envKey: "SILICONFLOW_API_KEY", endpoint: "https://api.siliconflow.com/v1/chat/completions", format: "json_object", note: "International endpoint. Choose a model supporting the selected JSON format." },
+  "claude-code": { name: "Claude Code (local CLI)", model: "opus", keyUrl: "https://code.claude.com/docs/en/quickstart", envKey: "", endpoint: "Anthropic, through the Claude Code CLI on this computer", format: "json_schema", note: "Runs your installed, unmodified Claude Code with tools disabled. Sign in by running claude in a terminal; Cutroom never reads or stores that login. Usage counts toward your Claude plan or account, which Anthropic may bill as extra usage." },
   custom: { name: "Custom OpenAI-compatible", model: "", keyUrl: "", envKey: "CUSTOM_AI_API_KEY", endpoint: "", format: "json_object", note: "Set CUTROOM_CUSTOM_AI_BASE_URL in the local .env file and restart. Use a trusted HTTPS OpenAI-compatible service and its own key." },
 };
 export interface ProviderStatus {
   provider: CloudProvider;
   configured: boolean;
-  source: "session" | "environment" | null;
+  source: "session" | "environment" | "login" | null;
   endpoint?: string;
   endpointReady?: boolean;
+  /** Claude Code only: whether the CLI was found and reports a sign-in. Never includes account details. */
+  cli?: { installed: boolean; loggedIn: boolean; authMethod?: string; version?: string };
 }
+export const usesApiKey = (provider: CloudProvider): provider is ApiKeyProvider => provider !== "claude-code";
+/** Providers whose native API enforces a JSON schema, so JSON mode is not offered. */
+export const schemaOnlyProviders: readonly string[] = ["openai", "anthropic", "claude-code"];

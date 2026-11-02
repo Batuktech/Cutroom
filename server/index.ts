@@ -10,7 +10,7 @@ import { importYoutube } from "./youtube.js";
 import { youtubeUrl } from "../shared/youtube.js";
 import { youtubeParts, sourceTime } from "../shared/youtube-range.js";
 import { deleteProject } from "./delete-project.js";
-import { aiCredentials, cloudProviderSchema } from "./ai-credentials.js";
+import { aiCredentials, apiKeyProviderSchema } from "./ai-credentials.js";
 import { providerEndpoint } from "./ai-endpoints.js";
 import { providerDetails } from "../shared/ai-providers.js";
 import { suggestionOptionsSchema } from "../shared/suggestions.js";
@@ -97,12 +97,12 @@ app.use((req, res, next) => {
   next();
 });
 app.use(express.json({ limit: "20mb" }));
-app.get("/api/ai/providers", (_req, res) => res.json(aiCredentials.status()));
-app.put("/api/ai/providers/:provider", (req, res) => {
-  res.json(aiCredentials.set(cloudProviderSchema.parse(req.params.provider), req.body));
+app.get("/api/ai/providers", async (req, res) => { res.json(await aiCredentials.status(req.query.recheck === "1")); });
+app.put("/api/ai/providers/:provider", async (req, res) => {
+  res.json(await aiCredentials.set(apiKeyProviderSchema.parse(req.params.provider), req.body));
 });
-app.delete("/api/ai/providers/:provider", (req, res) => {
-  res.json(aiCredentials.forget(cloudProviderSchema.parse(req.params.provider)));
+app.delete("/api/ai/providers/:provider", async (req, res) => {
+  res.json(await aiCredentials.forget(apiKeyProviderSchema.parse(req.params.provider)));
 });
 const upload = multer({
   storage: multer.diskStorage({
@@ -397,7 +397,7 @@ app.get("/api/projects/:id/subtitles", (req, res) => {
   res.setHeader("Content-Disposition", 'attachment; filename="captions.srt"');
   res.type("text/plain").send(toSrt(p.transcript));
 });
-app.post("/api/projects/:id/suggestions/analyze", (req, res) => {
+app.post("/api/projects/:id/suggestions/analyze", async (req, res) => {
   const options = suggestionOptionsSchema.parse(req.body);
   const p = getProject(req.params.id);
   if (!p.transcript.length) { res.status(400).json({ error: "Transcribe the video or import subtitles first." }); return; }
@@ -413,7 +413,7 @@ app.post("/api/projects/:id/suggestions/analyze", (req, res) => {
     if (options.provider === "custom" && req.body.cloudDestination !== endpoint) {
       res.status(400).json({ error: "Confirm the configured custom destination shown in the review dialog." }); return;
     }
-    aiCredentials.get(options.provider);
+    await aiCredentials.ready(options.provider);
   }
   res.status(202).json(enqueue("suggest", p.id, (context) => analyzeSuggestions(p.id, options, context)));
 });

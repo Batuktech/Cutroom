@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { cloudProviders } from "./ai-providers.js";
+import { cloudProviders, schemaOnlyProviders } from "./ai-providers.js";
 import { assessmentSchema } from "./clip-quality.js";
 const interestSchema = z.enum(["interesting", "funny", "educational", "story", "surprising", "debate", "emotional", "reactions", "quotes"]);
 export const suggestionOptionsSchema = z.object({
@@ -14,7 +14,7 @@ export const suggestionOptionsSchema = z.object({
   guidance: z.string().trim().max(600).default(""),
   strictness: z.enum(["discovery", "reviewed", "strict"]).default("discovery"),
   count: z.number().int().min(1).max(30).default(25),
-}).refine(o => !["openai", "anthropic"].includes(o.provider) || o.outputFormat !== "json_object", "This provider requires JSON schema output.").refine(o => o.minDuration <= o.maxDuration, "Minimum length must not exceed maximum length.");
+}).refine(o => !schemaOnlyProviders.includes(o.provider) || o.outputFormat !== "json_object", "This provider requires JSON schema output.").refine(o => o.minDuration <= o.maxDuration, "Minimum length must not exceed maximum length.");
 export const suggestionDiagnosticsSchema = z.object({
   proposed: z.number().int().nonnegative(), invalid: z.number().int().nonnegative(),
   duplicates: z.number().int().nonnegative(), rejected: z.number().int().nonnegative(),

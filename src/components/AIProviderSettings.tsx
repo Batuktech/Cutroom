@@ -41,11 +41,43 @@ export function ProviderKeyForm({ provider, status, refresh }: {
   </div>;
 }
 
-export function ProviderKeyDisclosure(props: { provider: CloudProvider; status?: ProviderStatus; refresh: () => Promise<void> }) {
+function claudeCodeState(status?: ProviderStatus) {
+  const cli = status?.cli;
+  if (!cli) return "Checking for Claude Code on this computer…";
+  if (!cli.installed) return "Claude Code was not found on this computer.";
+  const version = cli.version ? ` ${cli.version}` : "";
+  if (!cli.loggedIn) return `Claude Code${version} is installed but not signed in.`;
+  return `Claude Code${version} is signed in${cli.authMethod === "claude.ai" ? " with a Claude account" : ""}.`;
+}
+
+export function ClaudeCodePanel({ status, refresh }: { status?: ProviderStatus; refresh: (recheck?: boolean) => Promise<void> }) {
+  const [busy, setBusy] = useState(false);
+  const details = providerDetails["claude-code"];
+  async function recheck() {
+    setBusy(true);
+    try { await refresh(true); } finally { setBusy(false); }
+  }
+  return <div className="provider-key-form">
+    <p className="suggestion-note">{details.note}</p>
+    <p className="suggestion-note provider-endpoint">Destination: {details.endpoint}</p>
+    <p className="suggestion-note" role="status">{busy ? "Checking Claude Code…" : claudeCodeState(status)}</p>
+    {status?.cli && !status.configured && <p className="suggestion-note">
+      {status.cli.installed ? "Open a terminal and run claude to sign in with your Claude subscription. Or run claude setup-token, set CLAUDE_CODE_OAUTH_TOKEN in the environment that starts Cutroom, and restart it. Then check again." : "Install Claude Code, run claude in a terminal to sign in, then check again. If it is installed outside your PATH, set CUTROOM_CLAUDE_CODE_BIN in .env and restart Cutroom."}
+    </p>}
+    <div className="provider-key-actions">
+      <Button variant="secondary" size="small" disabled={busy} onClick={() => void recheck()}>{busy ? "Checking…" : "Check again"}</Button>
+      <a href={details.keyUrl} target="_blank" rel="noreferrer">Claude Code setup guide ↗</a>
+    </div>
+    <p className="suggestion-note">Cutroom starts Claude Code with tools, plugins, hooks and MCP servers turned off, and sends the transcript through standard input. Cutroom has no field for Claude tokens and never reads or stores your Claude login; a setup-token in the environment is used only by Claude Code itself.</p>
+  </div>;
+}
+
+export function ProviderKeyDisclosure(props: { provider: CloudProvider; status?: ProviderStatus; refresh: (recheck?: boolean) => Promise<void> }) {
   const [open, setOpen] = useState(!props.status?.configured);
+  const cli = props.provider === "claude-code";
   return <details className="suggestion-extra" open={open} onToggle={e => setOpen(e.currentTarget.open)}>
-    <summary>{props.status?.configured ? "API key available · manage key" : "Add your API key"}</summary>
-    <ProviderKeyForm {...props} />
+    <summary>{cli ? (props.status?.configured ? "Claude Code signed in · details" : "Set up Claude Code") : props.status?.configured ? "API key available · manage key" : "Add your API key"}</summary>
+    {cli ? <ClaudeCodePanel status={props.status} refresh={props.refresh} /> : <ProviderKeyForm {...props} />}
   </details>;
 }
 
@@ -54,12 +86,14 @@ export function AIProviderSettings() {
   const { statuses, refresh, error } = useAIProviders();
   return <section className="settings-section cloud-ai-settings">
     <div className="settings-heading"><div><h2>Cloud AI · bring your own key</h2>
-      <p>Use an API model for clip suggestions. Local Qwen and free transcript rules remain available.</p></div></div>
-    <label className="field-label">API provider<select value={provider} onChange={e => setProvider(e.target.value as CloudProvider)}>
+      <p>Use an API model, or your own signed-in Claude Code, for clip suggestions. Local Qwen and free transcript rules remain available.</p></div></div>
+    <label className="field-label">Provider<select value={provider} onChange={e => setProvider(e.target.value as CloudProvider)}>
       {cloudProviders.map(id => <option key={id} value={id}>{providerDetails[id].name}</option>)}
     </select></label>
-    <ProviderKeyForm key={provider} provider={provider} status={statuses.find(s => s.provider === provider)} refresh={refresh} />
+    {provider === "claude-code"
+      ? <ClaudeCodePanel status={statuses.find(s => s.provider === provider)} refresh={refresh} />
+      : <ProviderKeyForm key={provider} provider={provider} status={statuses.find(s => s.provider === provider)} refresh={refresh} />}
     {error && <p role="alert" className="error-message">{error} <Button variant="secondary" size="small" onClick={() => void refresh()}>Retry</Button></p>}
-    <p className="settings-footnote">API usage is billed by your provider. ChatGPT and Claude chat subscriptions do not include general API credits. Cutroom does not use your chat login or subscription tokens. You choose the provider and confirm transcript sharing before each cloud analysis.</p>
+    <p className="settings-footnote">API usage is billed by your provider. ChatGPT and Claude chat subscriptions do not include general API credits, but Claude Code (local CLI) can use your own Claude sign-in through the official CLI. Cutroom never reads or stores chat logins or subscription tokens. You choose the provider and confirm transcript sharing before each cloud analysis.</p>
   </section>;
 }

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { providerDetails, type OutputFormat, type CloudProvider } from "../shared/ai-providers.js";
 
 import { providerEndpoint } from "./ai-endpoints.js";
+import { requestClaudeCode } from "./claude-code.js";
 
 export interface AIRequest {
   outputFormat?: "auto" | OutputFormat;
@@ -18,6 +19,7 @@ const tokenCount = z.number().int().nonnegative().catch(0);
 const textBlock = z.object({ type: z.string(), text: z.string().optional() });
 
 export async function requestAI(request: AIRequest): Promise<AIResponse> {
+  if (request.provider === "claude-code") return requestClaudeCode(request);
   const { provider, model, apiKey, instruction, input, schema } = request;
   const endpoint = providerEndpoint(provider);
   const format = request.outputFormat && request.outputFormat !== "auto" ? request.outputFormat : providerDetails[provider].format;

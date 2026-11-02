@@ -4,7 +4,7 @@ Cutroom has no accounts or analytics. Fonts and the sample video are bundled loc
 
 Network operations are explicit: dependency installation, speech/Qwen model downloads, YouTube URL import, optional [cloud transcript review](byok.md), social copy generation and Postiz publishing after confirmation. Once installed, Whisper and Qwen read local model files; rendering uses local FFmpeg. YouTube import does not read browser cookies or sign in to an account.
 
-Cloud review sends transcript text, timestamps, interests, and guidance to the selected provider (and OpenRouter's upstream model provider when applicable). Audio and video remain local. Provider data policies apply. UI-entered API keys stay in server memory and are excluded from metadata backups. Optional `.env` keys persist as plaintext outside the data folder; keep that file private. Chat subscriptions do not substitute for API keys.
+Cloud review sends transcript text, timestamps, interests, and guidance to the selected provider (and OpenRouter's upstream model provider when applicable). Audio and video remain local. Provider data policies apply. UI-entered API keys stay in server memory and are excluded from metadata backups. Optional `.env` keys persist as plaintext outside the data folder; keep that file private. Chat subscriptions do not substitute for API keys. Claude Code (local CLI) runs your own signed-in CLI: the transcript goes to Anthropic through it, and Cutroom never reads or stores that login.
 
 ## Storage
 
