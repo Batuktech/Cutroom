@@ -2,7 +2,8 @@ import path from "node:path";
 import { mkdir, mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SocialAccounts, SocialError, socialAccounts } from "./social-accounts.js";
-import { tiktokCaption, tiktokChunks, uploadTiktok, uploadTiktokDraft, uploadYoutube } from "./social-upload.js";
+import { postTiktok, tiktokCaption, tiktokChunks, tiktokCreator, uploadTiktok, uploadTiktokDraft, uploadYoutube } from "./social-upload.js";
+import { tiktokPostSchema } from "../shared/tiktok.js";
 
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 const env = { CUTROOM_PORT: "4318", YOUTUBE_CLIENT_ID: "synthetic-client-id", YOUTUBE_CLIENT_SECRET: "synthetic-secret",
@@ -113,6 +114,31 @@ describe("platform uploads", () => {
     expect(await uploadYoutube(file, meta)).toEqual({ remoteId: "abcDEF12345", url: "https://youtube.com/shorts/abcDEF12345" });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(json({}, 200, { Location: "https://attacker.example/upload" })));
     expect(await uploadYoutube(file, meta).catch(e => e)).toMatchObject({ definite: true });
+  });
+  it("posts to TikTok with exactly the settings chosen on the posting screen", async () => {
+    const file = path.join(await scratch(), "clip.mp4");
+    await writeFile(file, Buffer.alloc(1024));
+    vi.spyOn(socialAccounts, "accessToken").mockResolvedValue("access");
+    const creator = { data: { creator_username: "synthetic", creator_nickname: "Synthetic Creator", creator_avatar_url: "http://insecure.example/a.png",
+      privacy_level_options: ["SELF_ONLY", "PUBLIC_TO_EVERYONE", "UNKNOWN"], max_video_post_duration_sec: 60, comment_disabled: false, duet_disabled: true, stitch_disabled: false }, error: { code: "ok" } };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(json(creator)));
+    expect(await tiktokCreator()).toEqual({ nickname: "Synthetic Creator", username: "synthetic", avatarUrl: undefined,
+      privacyLevels: ["PUBLIC_TO_EVERYONE", "SELF_ONLY"], commentDisabled: false, duetDisabled: true, stitchDisabled: false, maxDuration: 60 });
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(json(creator))
+      .mockResolvedValueOnce(json({ data: { publish_id: "p2", upload_url: "https://upload.example/video" }, error: { code: "ok" } }))
+      .mockRejectedValueOnce(new Error("socket hang up"));
+    vi.stubGlobal("fetch", fetchMock);
+    const choice = { caption: "Hello", privacy: "PUBLIC_TO_EVERYONE" as const, allowComment: true, allowDuet: true, allowStitch: false, brandOrganic: true, brandedContent: false };
+    expect(await postTiktok(file, choice, 30).catch(e => e)).toMatchObject({ definite: false });
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body).post_info).toEqual({ title: "Hello", privacy_level: "PUBLIC_TO_EVERYONE", video_cover_timestamp_ms: 1000,
+      disable_comment: false, disable_duet: true, disable_stitch: true, brand_organic_toggle: true, brand_content_toggle: false });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(json(creator)));
+    expect(await postTiktok(file, choice, 90).catch(e => e)).toMatchObject({ definite: true, message: expect.stringContaining("up to 60 seconds") });
+    const request = { ...choice, exportId: "00000000-0000-4000-8000-000000000000", consent: true };
+    expect(tiktokPostSchema.safeParse({ ...request, privacy: "SELF_ONLY", brandedContent: true }).success).toBe(false);
+    expect(tiktokPostSchema.safeParse({ ...request, consent: false }).success).toBe(false);
+    expect(tiktokPostSchema.safeParse({ ...request, privacy: undefined }).success).toBe(false);
   });
   it("sends TikTok drafts to the inbox without a caption and keeps the caption for pasting", async () => {
     const file = path.join(await scratch(), "clip.mp4");
