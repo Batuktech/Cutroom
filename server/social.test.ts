@@ -2,7 +2,7 @@ import path from "node:path";
 import { mkdir, mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SocialAccounts, SocialError, socialAccounts } from "./social-accounts.js";
-import { tiktokChunks, uploadTiktok, uploadYoutube } from "./social-upload.js";
+import { tiktokCaption, tiktokChunks, uploadTiktok, uploadTiktokDraft, uploadYoutube } from "./social-upload.js";
 
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 const env = { CUTROOM_PORT: "4318", YOUTUBE_CLIENT_ID: "synthetic-client-id", YOUTUBE_CLIENT_SECRET: "synthetic-secret",
@@ -113,6 +113,22 @@ describe("platform uploads", () => {
     expect(await uploadYoutube(file, meta)).toEqual({ remoteId: "abcDEF12345", url: "https://youtube.com/shorts/abcDEF12345" });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(json({}, 200, { Location: "https://attacker.example/upload" })));
     expect(await uploadYoutube(file, meta).catch(e => e)).toMatchObject({ definite: true });
+  });
+  it("sends TikTok drafts to the inbox without a caption and keeps the caption for pasting", async () => {
+    const file = path.join(await scratch(), "clip.mp4");
+    await writeFile(file, Buffer.alloc(1024));
+    vi.spyOn(socialAccounts, "accessToken").mockResolvedValue("access");
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(json({ data: { publish_id: "d1", upload_url: "https://upload.example/video" }, error: { code: "ok" } }))
+      .mockRejectedValueOnce(new Error("socket hang up"));
+    vi.stubGlobal("fetch", fetchMock);
+    const meta = { title: "Clip", description: "Synthetic", tags: ["#one", "#two"], visibility: "public" as const, duration: 30 };
+    expect(await uploadTiktokDraft(file, meta).catch(e => e)).toMatchObject({ definite: false });
+    expect(fetchMock.mock.calls[0][0]).toBe("https://open.tiktokapis.com/v2/post/publish/inbox/video/init/");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ source_info: { source: "FILE_UPLOAD", video_size: 1024, chunk_size: 1024, total_chunk_count: 1 } });
+    expect(tiktokCaption(meta)).toBe("Clip\n\nSynthetic\n\n#one #two");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(json({ error: { code: "spam_risk_too_many_pending_share" } }, 403)));
+    expect(await uploadTiktokDraft(file, meta).catch(e => e)).toMatchObject({ definite: true, code: "spam_risk_too_many_pending_share" });
   });
   it("falls back to a private TikTok post when the app is not audited", async () => {
     const file = path.join(await scratch(), "clip.mp4");

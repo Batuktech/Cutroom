@@ -10,7 +10,7 @@ import { transcriptHash } from "./suggestion-domain.js";
 import { clipSourceHash, generateCopy } from "./social-copy.js";
 import { SocialError } from "./social-accounts.js";
 import { aiCredentials } from "./ai-credentials.js";
-import { uploadTiktok, uploadYoutube, type UploadMeta } from "./social-upload.js";
+import { tiktokCaption, uploadTiktok, uploadTiktokDraft, uploadYoutube, type UploadMeta } from "./social-upload.js";
 import { clipSchema } from "./domain.js";
 import { youtubeUrl } from "../shared/youtube.js";
 import { suggestionOptionsSchema } from "../shared/suggestions.js";
@@ -254,14 +254,16 @@ async function publishClips(id: string, context: JobContext) {
       await setTarget(id, item.id, target.platform, { state: "submitting", message: undefined });
       try {
         const file = path.join(EXPORTS, current.exportId + ".mp4");
-        const receipt = await (target.platform === "youtube" ? uploadYoutube : uploadTiktok)(file, meta, context.signal);
-        await setTarget(id, item.id, target.platform, { state: "submitted", remoteId: receipt.remoteId, url: receipt.url, message: receipt.message });
+        const draft = target.platform === "tiktok" && (getStream(id).settings.tiktokMode ?? "direct") === "draft";
+        const receipt = await (target.platform === "youtube" ? uploadYoutube : draft ? uploadTiktokDraft : uploadTiktok)(file, meta, context.signal);
+        await setTarget(id, item.id, target.platform, { state: "submitted", remoteId: receipt.remoteId, url: receipt.url, message: receipt.message,
+          caption: draft ? tiktokCaption(meta) : undefined });
       } catch (error) {
         const definite = error instanceof SocialError && error.definite, code = error instanceof SocialError ? error.code : undefined;
         const message = error instanceof SocialError ? error.message : "The upload stopped before the platform confirmed it. Check the platform before retrying.";
         await setTarget(id, item.id, target.platform, { state: definite ? "failed" : "unknown", message });
         // Account-wide refusals would repeat for every remaining clip; stop that platform for this run.
-        if (definite && ["quotaExceeded", "uploadLimitExceeded", "auth", "spam_risk_too_many_posts", "reached_active_user_cap",
+        if (definite && ["quotaExceeded", "uploadLimitExceeded", "auth", "spam_risk_too_many_posts", "spam_risk_too_many_pending_share", "reached_active_user_cap",
           "unaudited_client_can_only_post_to_private_accounts", "access_token_invalid", "scope_not_authorized"].includes(code ?? ""))
           blocked.set(target.platform, message);
         if (context.signal?.aborted) throw error;
