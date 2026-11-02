@@ -67,7 +67,11 @@ export interface StreamRecord {
   updatedAt: string;
   status: StreamStatus;
   message?: string;
-  settings: Omit<StreamRequest, "url" | "publishConsent" | "cloudConsent" | "reviewer"> & { reviewer?: StreamReviewer };
+  settings: Omit<StreamRequest, "url" | "publishConsent" | "cloudConsent" | "reviewer"> & {
+    reviewer?: StreamReviewer;
+    /** "reviewed" is set when the user asks to post clips that scored under the autopilot bar. */
+    qualityBar?: "strict" | "reviewed";
+  };
   jobId?: string;
   parts: StreamPart[];
   clips: AutopostClip[];

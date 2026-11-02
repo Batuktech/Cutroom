@@ -28,6 +28,10 @@ export function autopilotEligible(c: { verdict?: string; assessment?: Assessment
     ["hook", "peak", "payoff"].every(role => c.assessment!.evidence.some(e => e.role === role)) &&
     c.assessment.scores.hook >= 2 && c.assessment.scores.payoff >= 2 && c.assessment.scores.clarity >= 2;
 }
+/** The bar for "post anyway": the reviewer's context, ending, appeal and clarity checks passed, whatever the score. */
+export function reviewedClip(c: { verdict?: string; assessment?: Assessment }) {
+  return c.verdict === "reviewed" && !!c.assessment;
+}
 export const structuredObject = (properties: Record<string, unknown>) => ({ type: "object", properties, required: Object.keys(properties), additionalProperties: false });
 export const editorialReviewFormat = structuredObject({
   first: { type: "integer" }, last: { type: "integer" },

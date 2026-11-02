@@ -17,7 +17,7 @@ import { suggestionOptionsSchema } from "../shared/suggestions.js";
 import { analyzeSuggestions, acceptSuggestions, qwenReadiness } from "./suggestions.js";
 import { latestExports } from "../shared/exports.js";
 import { publishingRouter, recoverPublications } from "./publishing.js";
-import { cancelStream, createStream, initializeStreams, listStreams, retryStream } from "./streams.js";
+import { cancelStream, createStream, initializeStreams, listStreams, publishReviewed, retryStream } from "./streams.js";
 import { socialAccounts } from "./social-accounts.js";
 import { autopostPlatforms, streamRequestSchema } from "../shared/streams.js";
 import {
@@ -216,6 +216,7 @@ app.post("/api/streams", async (req, res) => {
 });
 app.post("/api/streams/:id/cancel", async (req, res) => res.json(await cancelStream(req.params.id)));
 app.post("/api/streams/:id/retry", async (req, res) => res.json(await retryStream(req.params.id)));
+app.post("/api/streams/:id/publish-reviewed", async (req, res) => res.json(await publishReviewed(req.params.id)));
 app.delete("/api/projects/:id/files", async (req, res) => {
   z.object({ confirm: z.literal(true) }).parse(req.body);
   res.json(await deleteProject(req.params.id));

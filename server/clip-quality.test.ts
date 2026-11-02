@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import fixtures from "../shared/clip-quality-fixtures.json" with { type: "json" };
-import { assessmentInputSchema, autopilotEligible } from "../shared/clip-quality.js";
+import { assessmentInputSchema, autopilotEligible, reviewedClip } from "../shared/clip-quality.js";
 import { groundAssessment, reviewContext } from "./clip-quality.js";
 import { validateSuggestions } from "./suggestion-domain.js";
 import { rankCandidates } from "../shared/streams.js";
@@ -26,6 +26,11 @@ describe("grounded editorial scoring", () => {
     expect(autopilotEligible({ verdict: "reviewed", assessment: assessment(4) })).toBe(false);
     expect(autopilotEligible({ verdict: "needs-review", assessment: assessment(0) })).toBe(false);
     expect(autopilotEligible({ verdict: "reviewed" })).toBe(false);
+  });
+  it("posts low-scoring clips only when asked, and only after they passed review", () => {
+    expect(reviewedClip({ verdict: "reviewed", assessment: assessment(1) })).toBe(true);
+    expect(reviewedClip({ verdict: "needs-review", assessment: assessment(0) })).toBe(false);
+    expect(reviewedClip({ verdict: "reviewed" })).toBe(false);
   });
   it("preserves scored evidence and uses it to choose the final shortlist", () => {
     const proposal = { first: 0, last: 2, title: "A quiet insight", reason: "A clear resolution", weakness: "", quote: segments[0].text, strength: 2, verdict: "reviewed" as const, assessment: assessmentInputSchema.parse(fixtures[0]) };
