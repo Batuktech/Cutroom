@@ -15,12 +15,12 @@ Cutroom is a local-first video clipping studio with transcript editing, optional
 
 - **Find moments in long videos.** Select transcript passages, set in/out points, or ask local Qwen or an optional cloud API model to propose candidates across multiple interests.
 - **Review findings while AI works.** Choose Discovery, Reviewed, or Strict; see candidates as sections finish; stop early and keep findings. Request up to 30 candidates with a maximum length of 20–100 seconds. Shorter clips still qualify.
-- **Transcribe locally.** Optional Whisper Tiny, Base, Small, and Large v3 produce editable text and word timings on CPU. Import existing SRT or WebVTT instead when you have subtitles.
+- **Transcribe locally.** Optional Whisper Tiny, Base, Small, and Large v3 produce editable text and word timings on CPU, or on an NVIDIA GPU with optional CUDA libraries. Import existing SRT or WebVTT instead when you have subtitles.
 - **Style captions.** Highlight, Word Pop, Punchy Phrases, Build-up, Studio, Bold, and Minimal; one-word or short-phrase pacing; editable size, position, and color.
 - **Frame and export.** 16:9, 9:16, 1:1, and 4:5; crop or fit; 720p/1080p H.264/AAC MP4, separate SRT, and delivery ZIPs. New clips default to **Highlight + 16:9**.
 - **Import finished YouTube replays.** Download a bounded range or split it into 15/30/60-minute projects. Each project stays independently editable.
 - **Keep control of files.** Local project storage, metadata backup/restore, cancellable jobs, transcript history, and confirmed project-file deletion.
-- **Stream autopilot.** Paste a finished YouTube VOD. Cutroom splits it into one-hour projects, transcribes each with Whisper large-v3, lets local Qwen pick the strongest moments, and renders the top clips as 9:16. It can also post them straight to YouTube Shorts and TikTok with your own developer apps. [Setup and limits](docs/stream-autopilot.md).
+- **Stream autopilot.** Paste a finished YouTube VOD. Cutroom splits it into one-hour projects, transcribes each with Whisper large-v3, lets local Qwen (or, with your consent, your own Claude Code sign-in) pick the strongest moments, and renders the top clips as 9:16. It can also post them straight to YouTube Shorts and TikTok with your own developer apps. [Setup and limits](docs/stream-autopilot.md).
 - **Prepare social posts.** Generate descriptions and hashtags, then render and send a saved portrait clip to Postiz for YouTube, TikTok and Instagram drafts, schedules or immediate publishing. [Setup and limits](docs/publishing.md).
 
 ## Quick start
@@ -48,7 +48,7 @@ With Python 3.10+ and venv support installed:
 npm run setup:ai
 ```
 
-Restart Cutroom. For transcription, install a model in **Studio settings → Speech models**. The Python setup downloads dependencies; model installation downloads weights separately. No model is preinstalled in this repository. [Model choices and tradeoffs](docs/large-model.md).
+Restart Cutroom. For transcription, install a model in **Studio settings → Speech models**. With an NVIDIA GPU on Linux, `npm run setup:ai -- --gpu` adds about 2 GB of CUDA libraries and makes Whisper many times faster ([details](docs/installation.md#faster-transcription-on-an-nvidia-gpu-linux)). The Python setup downloads dependencies; model installation downloads weights separately. No model is preinstalled in this repository. [Model choices and tradeoffs](docs/large-model.md).
 
 ### Add local AI clip discovery
 
