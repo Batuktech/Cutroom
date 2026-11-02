@@ -11,6 +11,7 @@
 - Whisper transcription runs on an NVIDIA GPU when the optional CUDA libraries are installed (`npm run setup:ai -- --gpu`), falling back to the CPU; CPU transcription and range imports now use up to 8 threads instead of 2.
 - Stream autopilot can review and write titles with Claude Code instead of local Qwen, with per-run transcript-sharing consent.
 - Finished streams that posted fewer clips than requested offer **Post reviewed clips anyway**, which posts reviewed clips that scored under the autopilot bar after confirmation.
+- Stream autopilot can send TikTok clips to the creator's inbox as drafts (the new default), with **Copy caption** beside each clip, so posts can be public without TikTok's app audit.
 - TikTok uploads from unaudited apps fall back to a private post instead of failing when Public was chosen.
 - YouTube range imports fetch the video in parallel 10 MB pieces instead of one throttled stream, and encode with NVENC when an NVIDIA encoder is available; a one-hour part now takes minutes instead of about half an hour.
 
