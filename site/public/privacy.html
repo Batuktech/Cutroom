@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy policy · Cutroom</title>
+  <meta name="description" content="How Cutroom handles your videos, transcripts, and YouTube and TikTok account data.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="inner">
+      <a class="brand" href="/"><img src="/favicon.svg" alt="" width="30" height="30">cutroom.</a>
+      <nav class="site-nav" aria-label="Site">
+        <a href="/#posting">How posting works</a>
+        <a href="/privacy" aria-current="page">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="https://github.com/Batuktech/Cutroom">Source code</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="doc">
+    <h1>Privacy policy</h1>
+    <p class="updated">Effective November 2, 2026</p>
+
+    <p class="note">Cutroom is software you install and run on your own computer. The Cutroom project does not operate a server that receives your videos, transcripts or account data. Information described here stays on your computer unless you choose a service that sends it elsewhere, as explained below.</p>
+
+    <h2>Who we are</h2>
+    <p>Cutroom is an open-source project published by Batuk at <a href="https://github.com/Batuktech/Cutroom">github.com/Batuktech/Cutroom</a>. In this policy, "Cutroom", "we" and "us" mean the project and its publisher; "you" means the person running Cutroom.</p>
+
+    <h2>Information Cutroom handles on your computer</h2>
+    <p>Cutroom stores its data in a folder on your computer (by default <code>.cutroom/</code> inside the Cutroom folder). It contains:</p>
+    <ul>
+      <li>videos you import, previews, thumbnails and rendered clips;</li>
+      <li>transcripts, clip settings, AI review results, titles and descriptions;</li>
+      <li>job history and downloaded speech and language models;</li>
+      <li>the YouTube and TikTok connection details described below.</li>
+    </ul>
+    <p>We do not receive this information. Cutroom has no user accounts, analytics, advertising or tracking.</p>
+
+    <h2>YouTube and Google account data</h2>
+    <p>If you connect a YouTube channel, Cutroom uses Google OAuth and asks for these permissions:</p>
+    <table>
+      <thead><tr><th>Permission</th><th>What Cutroom does with it</th></tr></thead>
+      <tbody>
+        <tr><td><code>youtube.upload</code></td><td>Uploads the clips you approve to your channel, with the title, description, tags and visibility shown in Cutroom.</td></tr>
+        <tr><td><code>youtube.readonly</code></td><td>Reads your channel's ID and name once after sign-in so Settings can show which channel is connected.</td></tr>
+      </tbody>
+    </table>
+    <p>Cutroom stores the resulting access and refresh tokens, and the channel ID and name, in <code>social-accounts.json</code> inside its data folder, readable only by your operating-system user. They are sent only to Google's APIs, to refresh the sign-in and upload your clips. They are never sent to us, to AI providers or to anyone else.</p>
+    <p>Cutroom uses YouTube API Services. By connecting YouTube you agree to the <a href="https://www.youtube.com/t/terms">YouTube Terms of Service</a>. Google's handling of your data is described in the <a href="https://policies.google.com/privacy">Google Privacy Policy</a>.</p>
+    <p>Cutroom's use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements. Google user data is not sold, not used for advertising, not used to train AI or machine-learning models, and not read by people.</p>
+
+    <h2>TikTok account data</h2>
+    <p>If you connect a TikTok account, Cutroom uses TikTok Login Kit and asks for these permissions:</p>
+    <table>
+      <thead><tr><th>Permission</th><th>What Cutroom does with it</th></tr></thead>
+      <tbody>
+        <tr><td><code>user.info.basic</code></td><td>Reads your display name so Settings can show which account is connected.</td></tr>
+        <tr><td><code>video.upload</code></td><td>Sends a clip you approve to your TikTok inbox as a draft. You review and post it in the TikTok app.</td></tr>
+        <tr><td><code>video.publish</code></td><td>Posts a clip you approve directly, with the caption and privacy setting you chose.</td></tr>
+      </tbody>
+    </table>
+    <p>The TikTok tokens and display name are stored the same way as the Google ones, and are sent only to TikTok's APIs. TikTok's handling of your data is described in the <a href="https://www.tiktok.com/legal/page/global/privacy-policy/en">TikTok Privacy Policy</a>.</p>
+
+    <h2>Services you can choose to use</h2>
+    <p>These features send information off your computer only when you turn them on:</p>
+    <ul>
+      <li><strong>Posting</strong> sends the rendered clip and its title, description and hashtags to YouTube or TikTok.</li>
+      <li><strong>Cloud AI review</strong> (your own OpenAI, Anthropic, Google, OpenRouter or similar API key, or your own Claude Code sign-in) sends transcript text, timestamps and your editing guidance to that provider after you confirm. Audio, video and platform account data are not sent.</li>
+      <li><strong>YouTube import</strong> downloads a public video you paste from YouTube. It does not sign in to YouTube or read browser cookies.</li>
+      <li><strong>Postiz</strong>, if you configure it, receives the clip and its social copy.</li>
+      <li><strong>Model and dependency downloads</strong> contact the hosts of those files when you install them.</li>
+    </ul>
+    <p>Each provider's own privacy policy applies to what it receives.</p>
+
+    <h2>How long data is kept, and how to delete it</h2>
+    <ul>
+      <li>Everything in Cutroom's data folder stays until you delete it. <strong>Delete project and files</strong> removes a project's footage, exports and caption history.</li>
+      <li><strong>Disconnect</strong> in Cutroom's Settings deletes the stored YouTube or TikTok tokens and account name from your computer.</li>
+      <li>To also revoke Cutroom's access on the platform's side, remove it at <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a> for Google, or in the TikTok app under <em>Settings and privacy → Security and permissions → Apps and services permissions</em>.</li>
+      <li>Videos already posted stay on YouTube and TikTok until you delete them there.</li>
+    </ul>
+
+    <h2>This website</h2>
+    <p>This site is a static page hosted by Cloudflare. It sets no cookies and runs no analytics. Cloudflare may process technical request data such as IP addresses to deliver and protect the site, as described in the <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare Privacy Policy</a>.</p>
+
+    <h2>Children</h2>
+    <p>Cutroom is not directed at children under 13, and we do not knowingly collect information from them.</p>
+
+    <h2>Security</h2>
+    <p>Cutroom listens only on your own computer (127.0.0.1) and stores platform tokens in owner-only files. Files in its data folder are not encrypted, so anyone with access to your operating-system account may be able to read them. Report security issues through <a href="https://github.com/Batuktech/Cutroom/security/advisories/new">GitHub's private vulnerability form</a>.</p>
+
+    <h2>Changes to this policy</h2>
+    <p>We will update the effective date above when this policy changes. Earlier versions are kept in the project's public history on GitHub.</p>
+
+    <h2>Contact</h2>
+    <p>Questions about this policy: open an issue at <a href="https://github.com/Batuktech/Cutroom/issues">github.com/Batuktech/Cutroom/issues</a>.</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="inner">
+      <span>Cutroom is open-source software by Batuk, released under the MIT License.</span>
+      <nav aria-label="Footer">
+        <a href="/privacy">Privacy policy</a>
+        <a href="/terms">Terms of service</a>
+        <a href="https://github.com/Batuktech/Cutroom/issues">Contact</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>

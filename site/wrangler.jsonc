@@ -1,0 +1,17 @@
+// Static site for cutroom.batuukka.com, served as Cloudflare Worker assets.
+{
+  "name": "cutroom-site",
+  "account_id": "e266880475b639db7354fb33911b759a",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./public",
+    "html_handling": "drop-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  // The custom domain creates DNS and the certificate. The zone also has a *.batuukka.com/* route
+  // for another Worker, so this more specific route is what actually wins for this host.
+  "routes": [
+    { "pattern": "cutroom.batuukka.com", "custom_domain": true },
+    { "pattern": "cutroom.batuukka.com/*", "zone_name": "batuukka.com" }
+  ]
+}
