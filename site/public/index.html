@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cutroom: captioned clips from long recordings, on your own computer</title>
+  <meta name="description" content="Cutroom is a free, open-source video studio that runs on your computer. It transcribes long recordings, helps you find clips, adds captions, and exports or posts them to your own YouTube and TikTok accounts.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/assets/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/site.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="inner">
+      <a class="brand" href="/"><img src="/favicon.svg" alt="" width="30" height="30">cutroom.</a>
+      <nav class="site-nav" aria-label="Site">
+        <a href="#posting">How posting works</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="https://github.com/Batuktech/Cutroom">Source code</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="hero">
+      <h1>Long recordings in. <span>Captioned clips out.</span></h1>
+      <p>Cutroom is a free, open-source video studio that runs on your own computer. It transcribes your recordings, helps you find the moments worth posting, frames and captions them, then exports the files or posts them to your own YouTube and TikTok accounts.</p>
+      <div class="actions">
+        <a class="button primary" href="https://github.com/Batuktech/Cutroom#quick-start">Install Cutroom</a>
+        <a class="button" href="https://github.com/Batuktech/Cutroom">Read the source on GitHub</a>
+      </div>
+      <figure class="shot">
+        <img src="/assets/editor.webp" width="1600" height="1060" alt="The Cutroom editor: a video preview with captions, the transcript on the right, and the timeline with a selected clip below.">
+        <figcaption>The editor with Cutroom's synthetic demo project. No real footage is shown.</figcaption>
+      </figure>
+    </div>
+
+    <section aria-labelledby="cut-title">
+      <h2 id="cut-title">From a two-hour stream to short clips</h2>
+      <p class="lede">Every step runs on your computer unless you choose a cloud service for it. You can stop after any step and edit by hand.</p>
+      <ol class="cut">
+        <li><span class="stage">Import</span><h3>Bring the recording</h3><p>Open a local file, or paste a finished YouTube replay. Long streams are split into one-hour projects.</p></li>
+        <li><span class="stage">Transcribe</span><h3>Turn speech into text</h3><p>Whisper runs locally, on an NVIDIA GPU when one is available, and produces editable text with word timings.</p></li>
+        <li><span class="stage">Review</span><h3>Find the moments</h3><p>A local model, your own API key, or your own Claude Code sign-in proposes clips and scores them from the transcript.</p></li>
+        <li><span class="stage">Frame</span><h3>Make it vertical</h3><p>Clips are reframed to 9:16, captioned in the style you pick, and rendered as 1080×1920 MP4.</p></li>
+        <li><span class="stage">Post</span><h3>Publish or export</h3><p>Save the files, or upload them to the YouTube and TikTok accounts you connected.</p></li>
+      </ol>
+    </section>
+
+    <section id="posting" aria-labelledby="posting-title">
+      <div class="split">
+        <div>
+          <h2 id="posting-title">How posting to YouTube and TikTok works</h2>
+          <p class="lede">You connect your own accounts from Cutroom's Settings page. Sign-in happens on Google's and TikTok's own pages, and the connection is stored on your computer. Cutroom has no server of its own: uploads travel directly from your computer to the platform.</p>
+          <p class="lede">Nothing is posted until you choose the accounts for a run and confirm publishing. You can disconnect an account at any time.</p>
+        </div>
+        <dl class="facts">
+          <div>
+            <dt>YouTube</dt>
+            <dd>Asks for <code>youtube.upload</code> to upload your clips as Shorts, and <code>youtube.readonly</code> to show which channel is connected. Titles, descriptions and tags are the ones you approved in Cutroom.</dd>
+          </div>
+          <div>
+            <dt>TikTok</dt>
+            <dd>Asks for <code>user.info.basic</code> to show the connected account, <code>video.upload</code> to send a clip to your TikTok inbox as a draft you finish in the TikTok app, and <code>video.publish</code> to post directly when you choose that.</dd>
+          </div>
+          <div>
+            <dt>Where your sign-in lives</dt>
+            <dd>In a file only your user account can read, inside Cutroom's data folder on your computer. It is never sent to the Cutroom project or anyone else.</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section aria-labelledby="local-title">
+      <h2 id="local-title">What stays on your computer</h2>
+      <p class="lede">Cutroom has no accounts, analytics or advertising. The details are in the <a href="/privacy">privacy policy</a>.</p>
+      <ul class="local">
+        <li><strong>Your footage</strong><span>Imported videos, previews and exports stay in Cutroom's local data folder.</span></li>
+        <li><strong>Transcripts</strong><span>Speech recognition runs on your machine. Text leaves it only if you pick a cloud reviewer and confirm.</span></li>
+        <li><strong>Platform connections</strong><span>YouTube and TikTok tokens are stored locally and used only to upload what you approve.</span></li>
+        <li><strong>The source</strong><span>Cutroom is MIT-licensed. Every request it makes is in the public code on GitHub.</span></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="inner">
+      <span>Cutroom is open-source software by Batuk, released under the MIT License.</span>
+      <nav aria-label="Footer">
+        <a href="/privacy">Privacy policy</a>
+        <a href="/terms">Terms of service</a>
+        <a href="https://github.com/Batuktech/Cutroom/issues">Contact</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>
