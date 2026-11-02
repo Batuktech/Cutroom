@@ -3,6 +3,9 @@ import { qualityValue, type Assessment } from "./clip-quality.js";
 
 export const autopostPlatforms = ["youtube", "tiktok"] as const;
 export type AutopostPlatform = typeof autopostPlatforms[number];
+/** Who finds clips and writes titles. Claude Code runs on the user's own Claude sign-in. */
+export const streamReviewers = ["local", "claude-code"] as const;
+export type StreamReviewer = typeof streamReviewers[number];
 export const STREAM_PART_SECONDS = 3600;
 export const streamLanguages = ["auto", "en", "mn", "es", "fr", "de", "ja", "ko", "zh", "ru", "pt", "it", "ar", "hi", "tr"] as const;
 
@@ -14,9 +17,13 @@ export const streamRequestSchema = z.object({
   platforms: z.array(z.enum(autopostPlatforms)).max(2).default([]),
   interests: z.array(z.enum(["interesting", "funny", "educational", "story", "surprising", "debate", "emotional", "reactions", "quotes"])).min(1).max(9)
     .default(["interesting", "funny", "story", "reactions"]),
+  reviewer: z.enum(streamReviewers).default("local"),
   // Publishing is an outward action; each stream run needs explicit consent.
   publishConsent: z.boolean().default(false),
+  // Claude review sends every part's transcript text to Anthropic, so it needs its own consent.
+  cloudConsent: z.boolean().default(false),
 }).refine(r => !r.platforms.length || r.publishConsent, "Confirm automatic publishing to the selected accounts.")
+  .refine(r => r.reviewer === "local" || r.cloudConsent, "Confirm sending transcript text to Anthropic through Claude Code.")
   .refine(r => new Set(r.platforms).size === r.platforms.length, "Choose each platform once.");
 export type StreamRequest = z.infer<typeof streamRequestSchema>;
 
@@ -60,7 +67,7 @@ export interface StreamRecord {
   updatedAt: string;
   status: StreamStatus;
   message?: string;
-  settings: Omit<StreamRequest, "url" | "publishConsent">;
+  settings: Omit<StreamRequest, "url" | "publishConsent" | "cloudConsent" | "reviewer"> & { reviewer?: StreamReviewer };
   jobId?: string;
   parts: StreamPart[];
   clips: AutopostClip[];
