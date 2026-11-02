@@ -50,6 +50,7 @@ Each upload costs 1,600 of the default 10,000 daily quota units, so about six up
 Each stream chooses how clips reach TikTok:
 
 - **Drafts** (the default) send each clip to your TikTok inbox. Open the TikTok notification, paste the caption (use **Copy caption** beside the clip) and choose who can watch. Your account can stay public, and the app does not need TikTok's audit. TikTok keeps at most 5 drafts waiting per day; further clips fail with a message until you post or delete some.
+- **Exports → Post to TikTok** posts one rendered video with TikTok's own posting choices: who can watch (no default), comment, Duet and Stitch (all off until you turn them on), content disclosure, and TikTok's music-usage consent. This screen follows TikTok's [content sharing guidelines](https://developers.tiktok.com/doc/content-sharing-guidelines) so the app can be submitted for TikTok's audit; until the audit passes, TikTok only accepts **Only me** posts from a private account.
 - **Post directly** publishes without opening TikTok. Until TikTok audits the app, posts are private only and the account itself must be private (**Settings and privacy → Privacy → Private account**). When a run asks for Public, Cutroom retries as private and says so beside the clip. TikTok's [content sharing guidelines](https://developers.tiktok.com/doc/content-sharing-guidelines) also expect a manual privacy choice for each post, so an audit for unattended posting is unlikely to pass.
 
 ## Consent, duplicates, and recovery
