@@ -19,6 +19,8 @@ import { latestExports } from "../shared/exports.js";
 import { publishingRouter, recoverPublications } from "./publishing.js";
 import { cancelStream, createStream, initializeStreams, listStreams, publishReviewed, retryStream } from "./streams.js";
 import { socialAccounts } from "./social-accounts.js";
+import { postTiktok, tiktokCreator } from "./social-upload.js";
+import { tiktokPostSchema } from "../shared/tiktok.js";
 import { autopostPlatforms, streamRequestSchema } from "../shared/streams.js";
 import {
   initialize,
@@ -185,6 +187,19 @@ app.post("/api/import/youtube", (req, res) => {
   res.status(202).json({ ...queued[0], queuedCount: queued.length });
 });
 const platformSchema = z.enum(autopostPlatforms);
+// TikTok's posting screen: fresh creator settings on open, then a post with exactly what the user chose.
+app.get("/api/social/tiktok/creator", async (_req, res) => res.json(await tiktokCreator()));
+app.post("/api/social/tiktok/post", (req, res) => {
+  const { exportId, consent: _consent, ...post } = tiktokPostSchema.parse(req.body);
+  const project = listProjects().find(p => p.exports.some(e => e.id === exportId));
+  const file = project?.exports.find(e => e.id === exportId);
+  if (!project || !file) { res.status(404).json({ error: "Export not found." }); return; }
+  const job = enqueue("publish", project.id, async context => {
+    context.progress(10, "Uploading to TikTok");
+    return postTiktok(path.join(EXPORTS, `${exportId}.mp4`), post, file.duration, context.signal);
+  }, `tiktok:${exportId}`, `TikTok · ${file.title}`.slice(0, 120));
+  res.status(202).json(job);
+});
 app.get("/api/social/accounts", (_req, res) => res.json(socialAccounts.status()));
 app.post("/api/social/:platform/connect", (req, res) => res.json(socialAccounts.connect(platformSchema.parse(req.params.platform))));
 app.put("/api/social/:platform/app", async (req, res) => res.json(await socialAccounts.setApp(platformSchema.parse(req.params.platform), req.body)));

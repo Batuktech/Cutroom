@@ -3,6 +3,7 @@ import { lstat } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
 import { z } from "zod";
 import { requestJson, SocialError, socialAccounts } from "./social-accounts.js";
+import { tiktokPrivacyLevels, type TiktokCreator, type TiktokPost } from "../shared/tiktok.js";
 
 export interface UploadMeta { title: string; description: string; tags: string[]; visibility: "public" | "private"; duration: number }
 export interface UploadReceipt { remoteId: string; url?: string; message?: string }
@@ -122,6 +123,49 @@ export async function uploadTiktokDraft(file: string, _meta: UploadMeta, signal?
   const status = await waitForTiktok(token, publishId, ["SEND_TO_USER_INBOX", "PUBLISH_COMPLETE"], signal);
   return { remoteId: publishId, message: status ? "Sent to your TikTok inbox. Open the TikTok notification, paste the caption and post."
     : "Uploaded. TikTok is still processing it; the draft will appear in your TikTok inbox." };
+}
+const creatorInfo = z.object({
+  creator_username: z.string().max(200), creator_nickname: z.string().max(200).optional(), creator_avatar_url: z.string().max(2048).optional(),
+  privacy_level_options: z.array(z.string()).max(10), max_video_post_duration_sec: z.number().positive(),
+  comment_disabled: z.boolean().optional(), duet_disabled: z.boolean().optional(), stitch_disabled: z.boolean().optional(),
+});
+/** Reads the creator's current posting settings; TikTok refuses with a message when the creator cannot post right now. */
+export async function tiktokCreator(signal?: AbortSignal): Promise<TiktokCreator> {
+  const token = await socialAccounts.accessToken("tiktok", signal);
+  const info = creatorInfo.safeParse(await tiktok("/v2/post/publish/creator_info/query/", token, {}, signal));
+  if (!info.success) throw new SocialError("TikTok returned unreadable creator settings.", true);
+  const d = info.data;
+  return {
+    nickname: d.creator_nickname || d.creator_username, username: d.creator_username,
+    avatarUrl: d.creator_avatar_url?.startsWith("https://") ? d.creator_avatar_url : undefined,
+    privacyLevels: tiktokPrivacyLevels.filter(level => d.privacy_level_options.includes(level)),
+    commentDisabled: !!d.comment_disabled, duetDisabled: !!d.duet_disabled, stitchDisabled: !!d.stitch_disabled,
+    maxDuration: d.max_video_post_duration_sec,
+  };
+}
+/** Posts with exactly the settings the user picked on Cutroom's TikTok posting screen. */
+export async function postTiktok(file: string, post: Omit<TiktokPost, "exportId" | "consent">, duration: number, signal?: AbortSignal): Promise<UploadReceipt> {
+  const { size, blob } = await videoFile(file);
+  const creator = await tiktokCreator(signal);
+  if (!creator.privacyLevels.includes(post.privacy)) throw new SocialError(tiktokMessages.privacy_level_option_mismatch, true);
+  if (duration > creator.maxDuration) throw new SocialError(`TikTok allows videos up to ${Math.floor(creator.maxDuration)} seconds for this account.`, true);
+  const token = await socialAccounts.accessToken("tiktok", signal);
+  const { chunkSize, count } = tiktokChunks(size);
+  const publishId = await sendTiktokChunks(await tiktok("/v2/post/publish/video/init/", token, {
+    post_info: {
+      title: post.caption, privacy_level: post.privacy, video_cover_timestamp_ms: 1000,
+      disable_comment: creator.commentDisabled || !post.allowComment,
+      disable_duet: creator.duetDisabled || !post.allowDuet,
+      disable_stitch: creator.stitchDisabled || !post.allowStitch,
+      brand_organic_toggle: post.brandOrganic, brand_content_toggle: post.brandedContent,
+    },
+    source_info: { source: "FILE_UPLOAD", video_size: size, chunk_size: chunkSize, total_chunk_count: count },
+  }, signal), blob, size, signal);
+  const status = await waitForTiktok(token, publishId, ["PUBLISH_COMPLETE"], signal);
+  const id = status?.publicaly_available_post_id?.[0];
+  return { remoteId: publishId, url: id ? `https://www.tiktok.com/@${creator.username}/video/${id}` : undefined,
+    message: status ? (id ? "Posted to TikTok." : "Posted. TikTok may still be reviewing it before it appears on your profile.")
+      : "Uploaded. TikTok is still processing it; it can take a few minutes to appear on your profile." };
 }
 export async function uploadTiktok(file: string, meta: UploadMeta, signal?: AbortSignal): Promise<UploadReceipt> {
   const { size, blob } = await videoFile(file);

@@ -14,3 +14,16 @@
 .social-history strong { display: block; margin-top: 12px; font-size: .875rem; }
 .social-fieldset input:not([type="checkbox"]), .social-fieldset textarea, .social-fieldset select { width: 100%; min-height: 44px; }
 @media (min-width: 600px) { .social-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* TikTok posting screen: the preview beside the choices TikTok requires the user to make. */
+.tiktok-post { display: grid; grid-template-columns: minmax(180px, 240px) minmax(0, 1fr); gap: 24px; align-items: start; }
+.tiktok-preview { width: 100%; aspect-ratio: 9 / 16; object-fit: contain; background: #000; border: 1px solid var(--line); border-radius: 10px; }
+.tiktok-creator { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: .9rem; }
+.tiktok-creator img { border-radius: 50%; }
+.tiktok-disclosure { padding-left: 32px; }
+.tiktok-consent a { color: var(--accent); }
+@media (max-width: 720px) {
+  .tiktok-post { grid-template-columns: 1fr; }
+  .tiktok-preview { max-height: 50vh; }
+  .tiktok-disclosure { padding-left: 0; }
+}

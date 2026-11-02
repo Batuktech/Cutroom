@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Download, Play, Check, Captions, ArrowDownToLine } from "lucide-react";
-import type { Project } from "../../shared/types";
+import { Download, Play, Check, Captions, ArrowDownToLine, Send } from "lucide-react";
+import type { ExportFile, Project } from "../../shared/types";
 import { latestExports } from "../../shared/exports";
 import { relativeDate, size, time } from "../lib/utils";
 import { Empty } from "./Empty";
+import { TiktokPostDialog } from "./TiktokPostDialog";
 
 export function Exports({
   projects,
@@ -15,6 +16,7 @@ export function Exports({
   chooseClip: () => void;
 }) {
   const [showAllExports, setShowAllExports] = useState(false);
+  const [tiktok, setTiktok] = useState<{ project: Project; file: ExportFile } | null>(null);
   const exports = projects
     .flatMap((p) =>
       (showAllExports ? p.exports : latestExports(p.exports)).map((e) => ({
@@ -25,6 +27,7 @@ export function Exports({
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return (
     <>
+      {tiktok && <TiktokPostDialog project={tiktok.project} file={tiktok.file} close={() => setTiktok(null)} />}
       <div className="page-heading">
         <div>
           <h1>Out of the editing room.</h1>
@@ -111,6 +114,14 @@ export function Exports({
                 Ready
               </span>
               <div className="export-buttons">
+                <button
+                  type="button"
+                  className="button button-secondary button-small"
+                  onClick={() => setTiktok({ project: e.project, file: e })}
+                >
+                  <Send size={15} />
+                  Post to TikTok
+                </button>
                 <a
                   className="button button-secondary button-small"
                   href={`/api/exports/${e.id}/srt`}
