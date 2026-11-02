@@ -5,10 +5,62 @@ import sys
 from pathlib import Path
 
 os.environ['HF_HUB_DISABLE_TELEMETRY'] = '1'
-os.environ['OMP_NUM_THREADS'] = '2'
+
+
+def worker_threads(cores=None):
+    """Half the logical cores, between 2 and 8, so transcription leaves room for the studio."""
+    cores = os.cpu_count() if cores is None else cores
+    return max(2, min(8, (cores or 4) // 2))
+
+
+THREADS = worker_threads()
+os.environ['OMP_NUM_THREADS'] = str(THREADS)
+
 
 def emit(data):
     print(json.dumps(data, ensure_ascii=False), flush=True)
+
+
+def cuda_library_dirs():
+    """cuBLAS and cuDNN from NVIDIA's pip wheels (scripts/requirements-gpu.txt), if installed."""
+    try:
+        import nvidia
+    except ImportError:
+        return []
+    return [str(Path(base) / name / 'lib') for base in nvidia.__path__ for name in ('cublas', 'cudnn')
+            if (Path(base) / name / 'lib').is_dir()]
+
+
+def ensure_cuda_libraries():
+    """The dynamic loader reads LD_LIBRARY_PATH only at startup, so restart once with the wheel folders on it."""
+    if sys.platform != 'linux' or os.environ.get('CUTROOM_WHISPER_DEVICE', 'auto') == 'cpu':
+        return
+    current = os.environ.get('LD_LIBRARY_PATH', '').split(os.pathsep)
+    missing = [folder for folder in cuda_library_dirs() if folder not in current]
+    if missing:
+        os.environ['LD_LIBRARY_PATH'] = os.pathsep.join(missing + [p for p in current if p])
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+
+
+def load_whisper(folder):
+    """Prefers an NVIDIA GPU and falls back to the CPU. CUTROOM_WHISPER_DEVICE=cpu or cuda forces one."""
+    from faster_whisper import WhisperModel
+    choice = os.environ.get('CUTROOM_WHISPER_DEVICE', 'auto')
+    if choice != 'cpu':
+        try:
+            import ctranslate2
+            import numpy
+            if ctranslate2.get_cuda_device_count() < 1:
+                raise RuntimeError('No CUDA device')
+            model = WhisperModel(folder, device='cuda', compute_type='int8_float16', num_workers=1, local_files_only=True)
+            # Loading succeeds without cuBLAS or cuDNN; one second of silence proves the GPU path runs.
+            segments, _ = model.transcribe(numpy.zeros(16000, dtype=numpy.float32), beam_size=1, language='en')
+            list(segments)
+            return model, 'cuda'
+        except Exception:
+            if choice == 'cuda':
+                raise
+    return WhisperModel(folder, device='cpu', compute_type='int8', cpu_threads=THREADS, num_workers=1, local_files_only=True), 'cpu'
 
 def main():
     parser = argparse.ArgumentParser()
@@ -37,13 +89,15 @@ def main():
         (Path(folder) / '.ready').write_text('installed')
         emit({'progress': 100, 'message': 'Model installed'})
     elif args.action == 'transcribe':
+        ensure_cuda_libraries()
         os.environ['HF_HUB_OFFLINE'] = '1'
-        from faster_whisper import WhisperModel
         folder = str(Path(args.models).resolve() / args.model)
         if not all((Path(folder) / name).is_file() for name in ['.ready', 'model.bin', 'config.json', 'tokenizer.json']):
             raise ValueError('The local model is incomplete. Install it again in Studio settings.')
         emit({'progress': 3, 'message': 'Loading local Whisper model'})
-        model = WhisperModel(folder, device='cpu', compute_type='int8', cpu_threads=2, num_workers=1, local_files_only=True)
+        model, device = load_whisper(folder)
+        where = 'on the GPU' if device == 'cuda' else f'on the CPU ({THREADS} threads)'
+        emit({'progress': 4, 'message': f'Transcribing {where}'})
         # Keep the original audio timeline intact; concatenated VAD islands can
         # lose quiet exchanges and produce caption groups spanning long pauses.
         segments, info = model.transcribe(
@@ -58,7 +112,7 @@ def main():
         import uuid
         for segment in segments:
             result.append({'id': str(uuid.uuid4()), 'start': segment.start, 'end': segment.end, 'text': segment.text.strip(), 'words': [{'start': w.start, 'end': w.end, 'word': w.word} for w in segment.words or []]})
-            emit({'progress': min(96, 5 + segment.end / max(info.duration, 1) * 90), 'message': f'Transcribing {int(segment.end)} of {int(info.duration)} seconds'})
+            emit({'progress': min(96, 5 + segment.end / max(info.duration, 1) * 90), 'message': f'Transcribing {where} · {int(segment.end)} of {int(info.duration)} seconds'})
         Path(args.output).write_text(json.dumps({
             'segments': result,
             'language': info.language,
