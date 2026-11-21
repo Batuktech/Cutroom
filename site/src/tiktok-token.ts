@@ -100,12 +100,14 @@ export async function tiktokToken(request: Request, env: TokenEnv, fetchImpl: ty
       method: "POST",
       body: grant,
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      redirect: "error",
+      // Workers support only "follow" and "manual"; a redirect from the token endpoint is treated as a failure below.
+      redirect: "manual",
       signal: AbortSignal.timeout(15_000),
     });
   } catch {
     return reply({ error: "upstream_unreachable" }, 502);
   }
+  if (upstream.status >= 300 && upstream.status < 400) return reply({ error: "upstream_redirect" }, 502);
   const data: unknown = await upstream.json().catch(() => null);
   const fields = data && typeof data === "object" ? (data as Record<string, unknown>) : {};
   if (!upstream.ok || typeof fields.access_token !== "string") {

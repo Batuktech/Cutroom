@@ -23,7 +23,7 @@ describe("TikTok token service", () => {
     const form = new URLSearchParams(String(init.body));
     expect(Object.fromEntries(form)).toEqual({ client_key: "synthetic-key", client_secret: "synthetic-secret", grant_type: "authorization_code",
       code: "abc", code_verifier: verifier, redirect_uri: redirect });
-    expect(init.redirect).toBe("error");
+    expect(init.redirect).toBe("manual");
   });
 
   it("refreshes tokens", async () => {
@@ -61,6 +61,9 @@ describe("TikTok token service", () => {
     expect(await refused.json()).toEqual({ error: "invalid_grant" });
     const down = await tiktokToken(call({ grant_type: "refresh_token", refresh_token: "r" }), env, vi.fn(async () => { throw new Error("offline"); }));
     expect(down.status).toBe(502);
+    const moved = await tiktokToken(call({ grant_type: "refresh_token", refresh_token: "r" }), env,
+      vi.fn(async () => new Response(null, { status: 302, headers: { Location: "https://elsewhere.example/" } })));
+    expect(await moved.json()).toEqual({ error: "upstream_redirect" });
   });
 
   it("rate-limits by client IP when the binding exists", async () => {
