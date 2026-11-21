@@ -1,0 +1,263 @@
+/* Shared form controls: the Select listbox, checkboxes, and field states. */
+
+input:not([type="checkbox"]):not([type="range"]):not([type="file"]),
+textarea,
+.select-trigger {
+  transition:
+    border-color 0.15s,
+    background-color 0.15s,
+    box-shadow 0.15s;
+}
+input:not([type="checkbox"]):not([type="range"]):not([type="file"]):hover:not(:disabled):not(:focus),
+textarea:hover:not(:disabled):not(:focus),
+.select-trigger:hover:not(:disabled):not([data-state="open"]) {
+  border-color: #929b85;
+}
+input:not([type="checkbox"]):not([type="range"]):not([type="file"]):focus-visible,
+textarea:focus-visible,
+.select-trigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px #d6f58a33;
+}
+input:disabled,
+textarea:disabled,
+.select-trigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Select trigger: a field-shaped button that shows the chosen value. The element selector outranks base button resets. */
+button.select-trigger {
+  border: 1px solid var(--control);
+  background: var(--panel);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 40px;
+  text-align: left;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.select-trigger > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-trigger[data-placeholder] > span:first-child {
+  color: #a9afa1;
+}
+.select-icon {
+  display: inline-flex;
+  color: var(--muted);
+  transition: transform 0.18s ease;
+}
+.select-trigger[data-state="open"] .select-icon {
+  transform: rotate(180deg);
+  color: var(--accent);
+}
+button.select-trigger[data-state="open"] {
+  background: var(--panel-raised);
+  border-color: var(--accent);
+}
+
+/* Listbox: the same raised surface as dialogs, with one lime marker for the chosen row. */
+.select-content {
+  z-index: 80;
+  min-width: max(var(--radix-select-trigger-width), 180px);
+  max-height: min(360px, var(--radix-select-content-available-height));
+  overflow: hidden;
+  background: #22271e;
+  border: 1px solid #4c5841;
+  border-radius: 10px;
+  box-shadow:
+    0 18px 48px #000a,
+    0 0 0 1px #0004;
+  transform-origin: var(--radix-select-content-transform-origin);
+  animation: select-in 0.14s ease-out;
+}
+.select-content[data-side="top"] {
+  animation-name: select-in-up;
+}
+.select-viewport {
+  padding: 5px;
+}
+.select-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 38px;
+  padding: 8px 10px 8px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+.select-item::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 9px;
+  bottom: 9px;
+  width: 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background 0.12s;
+}
+.select-item[data-highlighted] {
+  background: #323b29;
+}
+.select-item[data-highlighted]::before {
+  background: #8fa06f;
+}
+.select-item[data-state="checked"] {
+  color: var(--accent);
+  font-weight: 650;
+}
+.select-item[data-state="checked"]::before {
+  background: var(--accent);
+}
+.select-item[data-disabled] {
+  color: #7d8474;
+  cursor: not-allowed;
+}
+.select-item-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.select-item-text small {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.select-item[data-disabled] .select-item-text small {
+  color: #7d8474;
+}
+.select-check {
+  display: inline-flex;
+  color: var(--accent);
+}
+.select-scroll {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  color: var(--muted);
+  cursor: default;
+}
+@keyframes select-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+@keyframes select-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+
+/* Quiet sort control in section headings. */
+button.select-trigger.sort-select {
+  min-height: 32px;
+  width: auto;
+  padding: 6px 10px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+button.select-trigger.sort-select:hover:not(:disabled) {
+  background: var(--panel-raised);
+  border-color: var(--line);
+  color: var(--text);
+}
+
+/* Checkboxes: square, lime when on, with a drawn check so state is not carried by color alone. */
+input[type="checkbox"] {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--control);
+  border-radius: 5px;
+  background: var(--panel);
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+input[type="checkbox"]::after {
+  content: "";
+  width: 9px;
+  height: 5px;
+  border-left: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  transform: translateY(-1px) rotate(-45deg) scale(0);
+  transition: transform 0.12s ease-out;
+}
+input[type="checkbox"]:hover:not(:disabled) {
+  border-color: #a4ad96;
+}
+input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+input[type="checkbox"]:checked::after {
+  transform: translateY(-1px) rotate(-45deg) scale(1);
+}
+input[type="checkbox"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Action menus (Radix DropdownMenu) share the listbox surface. */
+.dropdown-content {
+  background: #22271e;
+  border-color: #4c5841;
+  border-radius: 10px;
+  box-shadow: 0 18px 48px #000a;
+  animation: select-in 0.14s ease-out;
+}
+.dropdown-content [role="menuitem"] {
+  border-radius: 6px;
+  outline: none;
+}
+.dropdown-content [data-highlighted] {
+  background: #323b29;
+  outline: none;
+  box-shadow: inset 2px 0 0 #8fa06f;
+  color: var(--text);
+}
+
+@media (pointer: coarse) {
+  .select-item {
+    min-height: 44px;
+  }
+  .select-trigger.sort-select {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .select-content,
+  .dropdown-content {
+    animation: none;
+  }
+  .select-icon,
+  input[type="checkbox"]::after {
+    transition: none;
+  }
+}

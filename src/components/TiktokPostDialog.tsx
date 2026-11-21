@@ -5,6 +5,7 @@ import { tiktokPrivacyNames, type TiktokCreator, type TiktokPrivacy } from "../.
 import { api, post } from "../lib/api";
 import { Button } from "./ui/button";
 import { Dialog } from "./ui/dialog";
+import { Select, SelectItem } from "./ui/select";
 
 const musicUsage = "https://www.tiktok.com/legal/page/global/music-usage-confirmation/en";
 const brandedPolicy = "https://www.tiktok.com/legal/page/global/bc-policy/en";
@@ -85,12 +86,12 @@ export function TiktokPostDialog({ project, file, close }: { project: Project; f
           <textarea rows={4} value={caption} maxLength={2200} onChange={e => setCaption(e.target.value)} />
         </label>
         <label className="field-label">Who can watch this video
-          <select value={privacy} onChange={e => { setPrivacy(e.target.value as TiktokPrivacy | ""); setNotice(""); }} required>
-            <option value="" disabled>Select who can watch</option>
-            {creator.privacyLevels.map(level => <option key={level} value={level} disabled={level === "SELF_ONLY" && disclose && brandedContent}>
-              {tiktokPrivacyNames[level]}{level === "SELF_ONLY" && disclose && brandedContent ? " (not available for branded content)" : ""}
-            </option>)}
-          </select>
+          <Select value={privacy} placeholder="Select who can watch" required onValueChange={v => { setPrivacy(v as TiktokPrivacy); setNotice(""); }}>
+            {creator.privacyLevels.map(level => <SelectItem key={level} value={level} disabled={level === "SELF_ONLY" && disclose && brandedContent}
+              hint={level === "SELF_ONLY" && disclose && brandedContent ? "Not available for branded content" : undefined}>
+              {tiktokPrivacyNames[level]}
+            </SelectItem>)}
+          </Select>
         </label>
         <fieldset className="social-fieldset">
           <legend className="field-label">Allow users to</legend>

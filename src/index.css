@@ -11,6 +11,7 @@
 @import "./styles/mobile-controls.css";
 @import "./styles/publishing.css";
 @import "./styles/streams.css";
+@import "./styles/controls.css";
 
 @font-face {
   font-family: "Cutroom Caption Fallback";

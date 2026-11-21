@@ -294,8 +294,9 @@
   font-size: 0.64rem;
   color: var(--muted);
 }
-.clip-filters select {
-  max-width: 260px;
+.clip-filters .select-trigger {
+  width: 260px;
+  max-width: 100%;
   min-height: 38px;
   font-size: 0.73rem;
 }
@@ -370,7 +371,7 @@
     flex: 1;
     min-width: 0;
   }
-  .clip-filters select {
+  .clip-filters .select-trigger {
     width: 100%;
     max-width: 100%;
     min-height: 42px;

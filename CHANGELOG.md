@@ -14,6 +14,8 @@
 - **Post to TikTok** on each export opens TikTok's required posting screen: fresh creator info, preview, caption, privacy and interaction choices with no defaults, content disclosure and the music-usage consent.
 - Stream autopilot can send TikTok clips to the creator's inbox as drafts (the new default), with **Copy caption** beside each clip, so posts can be public without TikTok's app audit.
 - TikTok uploads from unaudited apps fall back to a private post instead of failing when Public was chosen.
+- Every dropdown is now a styled, keyboard-accessible listbox with the chosen option marked and short hints under choices; checkboxes and fields get clearer hover, focus and checked states.
+- Stream autopilot shows requirements as a readiness checklist, publishing targets as cards with the connected account, and a parts-analyzed progress bar on each stream.
 - YouTube range imports fetch the video in parallel 10 MB pieces instead of one throttled stream, and encode with NVENC when an NVIDIA encoder is available; a one-hour part now takes minutes instead of about half an hour.
 
 ## 0.1.0 — initial public source

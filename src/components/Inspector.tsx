@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import type { Clip, Project, Segment } from "../../shared/types";
 import { Button } from "./ui/button";
+import { Select, SelectItem } from "./ui/select";
 import { hasMeasuredWords } from "../../shared/captions";
 import { time } from "../lib/utils";
 
@@ -394,14 +395,14 @@ export function Inspector({
                   : "Choose the pacing below. Measured word timings stay tied to the original speech."
               }</p>
               <label className="field-label">Words on screen
-                <select value={clip.captionMode ?? "auto"} onChange={(e) => change({ captionMode: e.target.value as Clip["captionMode"] })}>
-                  <option value="auto">Preset pacing</option><option value="word">One word at a time</option><option value="short">Short phrases · 1–2 seconds</option>
-                </select>
+                <Select value={clip.captionMode ?? "auto"} onValueChange={(v) => change({ captionMode: v as Clip["captionMode"] })}>
+                  <SelectItem value="auto">Preset pacing</SelectItem><SelectItem value="word">One word at a time</SelectItem><SelectItem value="short" hint="1–2 seconds">Short phrases</SelectItem>
+                </Select>
               </label>
               {(clip.captionMode === "short" || ((!clip.captionMode || clip.captionMode === "auto") && ["punch", "reveal"].includes(clip.captionStyle))) && <label className="field-label">Maximum phrase duration
-                <select value={clip.captionDuration ?? 1.5} onChange={(e) => change({ captionDuration: Number(e.target.value) })}>
-                  <option value={1}>1 second</option><option value={1.5}>1.5 seconds</option><option value={2}>2 seconds</option>
-                </select>
+                <Select value={String(clip.captionDuration ?? 1.5)} onValueChange={(v) => change({ captionDuration: Number(v) })}>
+                  <SelectItem value="1">1 second</SelectItem><SelectItem value="1.5">1.5 seconds</SelectItem><SelectItem value="2">2 seconds</SelectItem>
+                </Select>
               </label>}
               {project.transcript.some((s) => s.end > clip.start && s.start < clip.end && !hasMeasuredWords(s)) && <p className="notice">
                 Some words use estimated timing. SRT/VTT and edited passages do not have measured word timestamps. Transcribe the source with Whisper for speech-aligned word timing.

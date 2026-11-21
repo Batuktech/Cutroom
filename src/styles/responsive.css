@@ -413,10 +413,6 @@
   .section-heading h2 {
     font-size: 0.91rem;
   }
-  .sort-select {
-    font-size: 0.58rem;
-    padding-right: 14px;
-  }
   .view-toggle button {
     width: 29px;
   }
@@ -862,7 +858,7 @@
     min-height: 56px;
   }
   .field-label input,
-  .field-label select {
+  .field-label .select-trigger {
     min-height: 44px;
     font-size: 1rem;
   }
@@ -902,9 +898,6 @@
   }
   .section-heading > .row {
     gap: 4px;
-  }
-  .sort-select {
-    font-size: 0.55rem;
   }
   .clips-section .section-heading {
     flex-direction: column;

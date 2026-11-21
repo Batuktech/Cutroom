@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Upload, FileVideo, LoaderCircle, Download } from "lucide-react";
 import { Dialog } from "./ui/dialog";
 import { Button } from "./ui/button";
+import { Select, SelectItem } from "./ui/select";
 import { uploadVideo, post } from "../lib/api";
 import { youtubeUrl } from "../../shared/youtube";
 import { parseTimecode } from "../../shared/timecode";
@@ -118,13 +119,13 @@ export function UploadDialog({
             <label className="field-label">Start in original video<input value={start} disabled={queuing} onChange={(e) => setStart(e.target.value)} placeholder="02:00:00" aria-describedby="range-help" /></label>
             <label className="field-label">End in original video<input value={end} disabled={queuing} onChange={(e) => setEnd(e.target.value)} placeholder="03:00:00" aria-describedby="range-help" /></label>
           </div>
-          <label className="field-label">Split into projects<select value={partMinutes} disabled={queuing} onChange={(e) => setPartMinutes(Number(e.target.value))}>
-            <option value={0}>One project for this range</option><option value={15}>Every 15 minutes</option><option value={30}>Every 30 minutes</option><option value={60}>Every 60 minutes</option>
-          </select></label>
+          <label className="field-label">Split into projects<Select value={String(partMinutes)} disabled={queuing} onValueChange={(v) => setPartMinutes(Number(v))}>
+            <SelectItem value="0">One project for this range</SelectItem><SelectItem value="15">Every 15 minutes</SelectItem><SelectItem value="30">Every 30 minutes</SelectItem><SelectItem value="60">Every 60 minutes</SelectItem>
+          </Select></label>
           <p id="range-help" className="suggestion-note">Use HH:MM:SS. Each part becomes its own editable project starting at 0:00, with its original range in the title.</p>
           {rangeError ? <p role="status" className="error-message">{rangeError}</p> : <div className="range-summary" role="status"><strong>{planned.length} {planned.length === 1 ? "project" : "projects"} to download</strong><span>{sourceTime(planned[0]!.start)}–{sourceTime(planned.at(-1)!.end)} in the original stream</span></div>}
         </div>}
-        <label className="field-label">Download quality<select value={quality} disabled={queuing} onChange={(e) => setQuality(Number(e.target.value))}><option value={720}>Up to 720p · smaller download</option><option value={1080}>Up to 1080p · more detail</option></select></label>
+        <label className="field-label">Download quality<Select value={String(quality)} disabled={queuing} onValueChange={(v) => setQuality(Number(v))}><SelectItem value="720" hint="Smaller download">Up to 720p</SelectItem><SelectItem value="1080" hint="More detail">Up to 1080p</SelectItem></Select></label>
         <p className="suggestion-note">Each project is limited to 2 GB. Parts download one at a time; cancel them individually in the queue. Live broadcasts still in progress are not supported.</p>
         {!youtubeReady && <p role="status" className="error-message">The downloader is not ready. Run npm run setup:ai and restart Cutroom, or choose a file.</p>}
         {error && <p role="alert" className="error-message">{error}</p>}

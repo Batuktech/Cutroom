@@ -18,6 +18,7 @@ import {
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import type { Project } from "../../shared/types";
 import { Button } from "./ui/button";
+import { Select, SelectItem } from "./ui/select";
 import { relativeDate, time } from "../lib/utils";
 
 export function Library({
@@ -165,17 +166,17 @@ export function Library({
             <span>{projects.length.toString().padStart(2, "0")}</span>
           </h2>
           <div className="row">
-            <select
+            <Select
               className="sort-select"
               value={sort}
               aria-label="Sort projects"
-              onChange={(e) => setSort(e.target.value)}
+              onValueChange={setSort}
             >
-              <option value="recent">Recently edited</option>
-              <option value="oldest">Oldest first</option>
-              <option value="name">Name A–Z</option>
-              <option value="duration">Longest first</option>
-            </select>
+              <SelectItem value="recent">Recently edited</SelectItem>
+              <SelectItem value="oldest">Oldest first</SelectItem>
+              <SelectItem value="name">Name A–Z</SelectItem>
+              <SelectItem value="duration">Longest first</SelectItem>
+            </Select>
             <div className="view-toggle">
               <button
                 aria-label="Grid view"
