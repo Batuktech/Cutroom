@@ -4,6 +4,7 @@ import { readFile, rename, writeFile } from "node:fs/promises";
 import { z } from "zod";
 import { ROOT } from "./store.js";
 import type { AutopostPlatform, SocialAccountStatus } from "../shared/streams.js";
+import { CUTROOM_APP_PORT, cutroomApps, TIKTOK_TOKEN_SERVICE, type CutroomApps } from "./cutroom-apps.js";
 
 /** A failure that is `definite` happened before the platform could have created a post. */
 export class SocialError extends Error {
@@ -44,6 +45,8 @@ const tokenSchema = z.object({
   accessToken: z.string().max(8192).optional(),
   expiresAt: z.number().optional(),
   account: z.string().max(200).optional(),
+  // The app that issued this sign-in; a token from another app cannot be refreshed.
+  clientId: z.string().max(512).optional(),
 });
 type Token = z.infer<typeof tokenSchema>;
 const credential = z.string().trim().min(8).max(512).regex(/^[\x21-\x7e]+$/);
@@ -73,13 +76,34 @@ const tokenResponse = z.object({
   refresh_token: z.string().min(1).max(4096).optional(),
 });
 
+type AppSource = NonNullable<SocialAccountStatus["appSource"]>;
+interface ResolvedApp { service: string; authorize: string; token: string; id: string; secret?: string; tokenService?: string; source: AppSource }
+
+/** Built-in apps from source, overridable through CUTROOM_APP_* so a maintainer can test before shipping IDs. */
+function builtInApps(environment: NodeJS.ProcessEnv, fallback: CutroomApps): CutroomApps {
+  const read = (name: string) => credential.safeParse(environment[name]).data;
+  const youtubeId = read("CUTROOM_APP_YOUTUBE_CLIENT_ID"), youtubeSecret = read("CUTROOM_APP_YOUTUBE_CLIENT_SECRET");
+  const tiktokKey = read("CUTROOM_APP_TIKTOK_CLIENT_KEY");
+  const service = z.string().url().max(512).refine(value => {
+    const url = new URL(value);
+    return url.protocol === "https:" || (url.protocol === "http:" && ["127.0.0.1", "localhost"].includes(url.hostname));
+  }).safeParse(environment.CUTROOM_APP_TIKTOK_TOKEN_SERVICE).data;
+  return {
+    youtube: youtubeId && youtubeSecret ? { clientId: youtubeId, clientSecret: youtubeSecret } : fallback.youtube,
+    tiktok: tiktokKey ? { clientKey: tiktokKey, tokenService: service ?? TIKTOK_TOKEN_SERVICE } : fallback.tiktok,
+  };
+}
+
 export class SocialAccounts {
   private tokens: z.infer<typeof fileSchema> = {};
   private pending = new Map<string, { platform: AutopostPlatform; verifier: string; expires: number }>();
   private writes = Promise.resolve();
   private environment: NodeJS.ProcessEnv;
   private file: string;
-  constructor(environment: NodeJS.ProcessEnv = process.env, file = TOKEN_FILE) { this.environment = environment; this.file = file; }
+  private builtIn: CutroomApps;
+  constructor(environment: NodeJS.ProcessEnv = process.env, file = TOKEN_FILE, builtIn: CutroomApps = cutroomApps) {
+    this.environment = environment; this.file = file; this.builtIn = builtInApps(environment, builtIn);
+  }
 
   async load() {
     try { this.tokens = fileSchema.parse(JSON.parse(await readFile(this.file, "utf8"))); }
@@ -97,19 +121,31 @@ export class SocialAccounts {
     });
     return this.writes;
   }
-  private appSource(platform: AutopostPlatform) {
-    if (this.tokens.apps?.[platform]) return "saved" as const;
-    const app = apps[platform];
-    return credential.safeParse(this.environment[app.idEnv]).success && credential.safeParse(this.environment[app.secretEnv]).success ? "environment" as const : null;
+  private port() { return Number(this.environment.CUTROOM_PORT || CUTROOM_APP_PORT); }
+  /** Why Cutroom's own app cannot sign in on this install, if it cannot. */
+  private builtInBlocked(platform: AutopostPlatform) {
+    return platform === "tiktok" && this.port() !== CUTROOM_APP_PORT
+      ? `Cutroom's TikTok app only accepts sign-ins on port ${CUTROOM_APP_PORT}. Remove CUTROOM_PORT from .env, or add your own TikTok app.` : undefined;
   }
-  // Settings-entered credentials take precedence over .env.
-  private app(platform: AutopostPlatform) {
+  private resolve(platform: AutopostPlatform): ResolvedApp | null {
     const app = apps[platform], saved = this.tokens.apps?.[platform];
-    if (saved) return { ...app, id: saved.clientId, secret: saved.clientSecret };
+    // Settings-entered credentials take precedence over .env, and both over Cutroom's own app.
+    if (saved) return { ...app, id: saved.clientId, secret: saved.clientSecret, source: "saved" };
     const id = credential.safeParse(this.environment[app.idEnv]), secret = credential.safeParse(this.environment[app.secretEnv]);
-    if (!id.success || !secret.success)
-      throw Object.assign(new Error(`Add the ${app.service} app client ID and secret in Settings first.`), { status: 409 });
-    return { ...app, id: id.data, secret: secret.data };
+    if (id.success && secret.success) return { ...app, id: id.data, secret: secret.data, source: "environment" };
+    if (platform === "youtube" && this.builtIn.youtube)
+      return { ...app, id: this.builtIn.youtube.clientId, secret: this.builtIn.youtube.clientSecret, source: "cutroom" };
+    if (platform === "tiktok" && this.builtIn.tiktok)
+      return { ...app, id: this.builtIn.tiktok.clientKey, tokenService: this.builtIn.tiktok.tokenService, source: "cutroom" };
+    return null;
+  }
+  private appSource(platform: AutopostPlatform) { return this.resolve(platform)?.source ?? null; }
+  /** Which app signs this platform in; used to word quota and audit errors. */
+  sourceOf(platform: AutopostPlatform) { return this.appSource(platform); }
+  private app(platform: AutopostPlatform) {
+    const app = this.resolve(platform);
+    if (!app) throw Object.assign(new Error(`Add the ${apps[platform].service} app client ID and secret in Settings first.`), { status: 409 });
+    return app;
   }
   async setApp(platform: AutopostPlatform, input: unknown) {
     const parsed = appInputSchema.parse(input);
@@ -128,23 +164,29 @@ export class SocialAccounts {
     return this.status();
   }
   redirectUri(platform: AutopostPlatform) {
-    return `http://127.0.0.1:${Number(this.environment.CUTROOM_PORT || 4318)}/api/social/${platform}/callback`;
+    return `http://127.0.0.1:${this.port()}/api/social/${platform}/callback`;
   }
   private token(platform: AutopostPlatform): Token | undefined {
     const fromEnv = z.string().trim().min(1).max(4096).safeParse(this.environment[apps[platform].refreshEnv]);
-    return this.tokens[platform] ?? (fromEnv.success ? { refreshToken: fromEnv.data } : undefined);
+    const saved = this.tokens[platform];
+    // A sign-in issued by a different app (for example after .env credentials were added) cannot be refreshed.
+    if (saved?.clientId && saved.clientId !== this.resolve(platform)?.id) return undefined;
+    return saved ?? (fromEnv.success ? { refreshToken: fromEnv.data } : undefined);
   }
   status(): SocialAccountStatus[] {
     return (["youtube", "tiktok"] as const).map(platform => {
-      const appSource = this.appSource(platform);
+      const app = this.resolve(platform);
       const token = this.token(platform);
       // The client ID is shown only as a hint so the right app can be recognised; the secret never leaves the server.
-      const clientHint = appSource ? this.app(platform).id.slice(0, 8) + "…" : undefined;
-      return { platform, appConfigured: !!appSource, appSource, clientHint, connected: !!token, account: token?.account, redirectUri: this.redirectUri(platform) };
+      const clientHint = app && app.source !== "cutroom" ? app.id.slice(0, 8) + "…" : undefined;
+      return { platform, appConfigured: !!app, appSource: app?.source ?? null, clientHint, connected: !!token, account: token?.account,
+        redirectUri: this.redirectUri(platform), cutroomApp: !!this.builtIn[platform], cutroomAppBlocked: this.builtIn[platform] ? this.builtInBlocked(platform) : undefined };
     });
   }
   connect(platform: AutopostPlatform) {
     const app = this.app(platform);
+    const blocked = app.source === "cutroom" ? this.builtInBlocked(platform) : undefined;
+    if (blocked) throw Object.assign(new Error(blocked), { status: 409 });
     const now = Date.now();
     for (const [key, value] of this.pending) if (value.expires < now) this.pending.delete(key);
     const state = randomBytes(24).toString("hex"), verifier = randomBytes(48).toString("base64url");
@@ -169,12 +211,11 @@ export class SocialAccounts {
     if (!pending || pending.platform !== platform || pending.expires < Date.now()) throw new Error("This sign-in link expired. Start Connect again from Settings.");
     if (typeof query.code !== "string" || !query.code || query.code.length > 2048) throw new Error("Sign-in was cancelled or refused.");
     const app = this.app(platform);
-    const token = await this.exchange(platform, {
-      ...(platform === "youtube" ? { client_id: app.id } : { client_key: app.id }), client_secret: app.secret,
+    const token = await this.exchange(app, platform, {
       code: query.code, grant_type: "authorization_code", redirect_uri: this.redirectUri(platform), code_verifier: pending.verifier,
     });
     if (!token.refreshToken) throw new Error(`${app.service} did not return offline access. Remove Cutroom's access in your account settings and connect again.`);
-    this.tokens[platform] = token as Token;
+    this.tokens[platform] = { ...token, clientId: app.id } as Token;
     this.tokens[platform]!.account = await this.accountName(platform).catch(() => undefined);
     await this.save();
   }
@@ -183,11 +224,17 @@ export class SocialAccounts {
     await this.save();
     return this.status();
   }
-  private async exchange(platform: AutopostPlatform, form: Record<string, string>): Promise<Partial<Token> & { accessToken: string; expiresAt: number }> {
-    const app = apps[platform];
-    const response = await requestJson(app.token, { method: "POST", body: new URLSearchParams(form),
-      headers: { "Content-Type": "application/x-www-form-urlencoded" } }, app.service);
+  private async exchange(app: ResolvedApp, platform: AutopostPlatform, grant: Record<string, string>): Promise<Partial<Token> & { accessToken: string; expiresAt: number }> {
+    // Cutroom's TikTok app has no secret on this computer: its token service adds the secret and forwards the grant to TikTok.
+    const response = app.tokenService
+      ? await requestJson(app.tokenService, { method: "POST", body: JSON.stringify(grant),
+        headers: { "Content-Type": "application/json" } }, "Cutroom's TikTok sign-in service")
+      : await requestJson(app.token, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ ...grant, ...(platform === "youtube" ? { client_id: app.id } : { client_key: app.id }), client_secret: app.secret ?? "" }) }, app.service);
     const parsed = tokenResponse.safeParse(response.body);
+    if (app.tokenService && (response.status === 429 || response.status >= 500))
+      throw new SocialError(response.status === 429 ? "Cutroom's TikTok sign-in service is busy. Try again in a minute."
+        : "Cutroom's TikTok sign-in service is unavailable right now. Try again later, or add your own TikTok app in Settings.", true, "auth");
     if (response.status >= 400 || !parsed.success)
       throw new SocialError(`${app.service} refused the sign-in (HTTP ${response.status}). Connect the account again in Settings.`, true, "auth");
     return { accessToken: parsed.data.access_token, expiresAt: Date.now() + (parsed.data.expires_in - 60) * 1000, refreshToken: parsed.data.refresh_token };
@@ -198,10 +245,7 @@ export class SocialAccounts {
     if (saved.accessToken && (saved.expiresAt ?? 0) > Date.now()) return saved.accessToken;
     signal?.throwIfAborted();
     const app = this.app(platform);
-    const next = await this.exchange(platform, {
-      ...(platform === "youtube" ? { client_id: app.id } : { client_key: app.id }),
-      client_secret: app.secret, grant_type: "refresh_token", refresh_token: saved.refreshToken,
-    });
+    const next = await this.exchange(app, platform, { grant_type: "refresh_token", refresh_token: saved.refreshToken });
     // TikTok rotates refresh tokens; Google usually keeps the original one.
     this.tokens[platform] = { ...saved, ...next, refreshToken: next.refreshToken || saved.refreshToken };
     await this.save();

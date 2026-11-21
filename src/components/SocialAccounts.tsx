@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, ChevronDown, LoaderCircle, Play, Music2, ShieldCheck } from "lucide-react";
 import type { AutopostPlatform, SocialAccountStatus } from "../../shared/streams";
 import { api, post } from "../lib/api";
 import { Button } from "./ui/button";
@@ -12,14 +12,14 @@ const names: Record<AutopostPlatform, { title: string; idLabel: string; setup: s
   ] },
   tiktok: { title: "TikTok", idLabel: "Client key", setup: [
     "In TikTok for Developers, create an app on the Desktop platform.",
-    "Add Login Kit and Content Posting API with Direct Post, and request user.info.basic and video.publish.",
+    "Add Login Kit and the Content Posting API, and request user.info.basic, video.upload and video.publish.",
     "Register the redirect URI shown below, then copy the client key and secret here.",
   ] },
 };
 
 function AppCredentials({ account, update }: { account: SocialAccountStatus; update: (next: SocialAccountStatus[]) => void }) {
   const name = names[account.platform];
-  const [editing, setEditing] = useState(!account.appConfigured);
+  const [editing, setEditing] = useState(!account.appConfigured || account.appSource === "cutroom");
   const [clientId, setClientId] = useState(""), [clientSecret, setClientSecret] = useState("");
   const [busy, setBusy] = useState(false), [error, setError] = useState(""), [saved, setSaved] = useState("");
   async function save(event: React.FormEvent) {
@@ -40,7 +40,8 @@ function AppCredentials({ account, update }: { account: SocialAccountStatus; upd
   }
   const id = `app-${account.platform}`;
   return <>
-    <p className="suggestion-note">{account.appSource === "saved" ? `Developer app saved in this studio (${name.idLabel.toLowerCase()} ${account.clientHint}).`
+    <p className="suggestion-note">{account.appSource === "cutroom" ? "Using Cutroom's app. Add your own developer app if you want a separate upload quota or your own app review."
+      : account.appSource === "saved" ? `Developer app saved in this studio (${name.idLabel.toLowerCase()} ${account.clientHint}).`
       : account.appSource === "environment" ? `Developer app read from .env (${name.idLabel.toLowerCase()} ${account.clientHint}). Saving here overrides it.`
       : "No developer app yet. Add your app's credentials to enable sign-in."}</p>
     {!editing ? <div className="provider-key-actions">
@@ -61,13 +62,61 @@ function AppCredentials({ account, update }: { account: SocialAccountStatus; upd
       </div>
       <div className="provider-key-actions">
         <Button type="submit" variant="secondary" disabled={busy || !clientId.trim() || !clientSecret.trim()}>{busy ? "Saving…" : "Save app credentials"}</Button>
-        {account.appConfigured && <Button variant="ghost" disabled={busy} onClick={() => { setEditing(false); setError(""); }}>Keep current app</Button>}
+        {account.appConfigured && account.appSource !== "cutroom" && <Button variant="ghost" disabled={busy} onClick={() => { setEditing(false); setError(""); }}>Keep current app</Button>}
       </div>
+      <p className="suggestion-note provider-endpoint">Redirect URI to register: {account.redirectUri}</p>
       {account.appConfigured && <p className="settings-footnote">Using a different {name.idLabel.toLowerCase()} disconnects the current account, because its sign-in belongs to the old app.</p>}
     </form>}
     {saved && <p role="status" className="suggestion-note">{saved}</p>}
     {error && <p role="alert" className="error-message">{error}</p>}
   </>;
+}
+
+const platformIcon: Record<AutopostPlatform, typeof Play> = { youtube: Play, tiktok: Music2 };
+const blurb: Record<AutopostPlatform, string> = {
+  youtube: "Stream autopilot uploads the top clips as Shorts.",
+  tiktok: "Clips go to your TikTok inbox as drafts, or post directly when you choose.",
+};
+
+function AccountCard({ account, waiting, connect, disconnect, update }: {
+  account: SocialAccountStatus;
+  waiting: boolean;
+  connect: () => void;
+  disconnect: () => void;
+  update: (next: SocialAccountStatus[]) => void;
+}) {
+  const name = names[account.platform];
+  const Icon = platformIcon[account.platform];
+  const easy = account.appSource === "cutroom" || (!account.appConfigured && account.cutroomApp);
+  const blocked = account.appSource === "cutroom" ? account.cutroomAppBlocked : undefined;
+  const state = account.connected ? "connected" : waiting ? "waiting" : account.appConfigured && !blocked ? "ready" : "setup";
+  return <article className={`account-card account-${state}`} aria-labelledby={`account-${account.platform}`}>
+    <header className="account-card-head">
+      <span className={`account-mark mark-${account.platform}`} aria-hidden><Icon size={18} /></span>
+      <div className="account-card-title">
+        <h3 id={`account-${account.platform}`}>{name.title}</h3>
+        <p>{blurb[account.platform]}</p>
+      </div>
+      <span className="account-state" role="status">
+        {state === "connected" ? <><Check size={14} aria-hidden />Connected</>
+          : state === "waiting" ? <><LoaderCircle size={14} className="spin" aria-hidden />Waiting for sign-in</>
+          : state === "ready" ? "Not connected" : "Needs setup"}
+      </span>
+    </header>
+    {account.connected && <p className="account-who">{account.account ?? "Signed in"}<small>{account.appSource === "cutroom" ? " · through Cutroom's app" : " · through your developer app"}</small></p>}
+    {blocked && <p role="alert" className="error-message">{blocked}</p>}
+    {account.appConfigured && !blocked && <div className="account-actions">
+      <Button disabled={waiting} variant={account.connected ? "ghost" : "default"} onClick={connect}>
+        {waiting ? "Finish signing in in the other tab…" : account.connected ? "Reconnect" : `Connect ${name.title}`}</Button>
+      {account.connected && <Button variant="ghost" onClick={disconnect}>Disconnect</Button>}
+    </div>}
+    {easy && !account.connected && !blocked && <p className="account-trust"><ShieldCheck size={14} aria-hidden />
+      You sign in on {account.platform === "youtube" ? "Google" : "TikTok"}'s own page. Cutroom keeps the sign-in on this computer and never sees your password.</p>}
+    {easy ? <details className="account-advanced">
+      <summary><ChevronDown size={14} aria-hidden />Use my own developer app instead</summary>
+      <AppCredentials account={account} update={update} />
+    </details> : <AppCredentials account={account} update={update} />}
+  </article>;
 }
 
 export function SocialAccounts() {
@@ -101,23 +150,17 @@ export function SocialAccounts() {
     try { setAccounts(await api<SocialAccountStatus[]>(`/social/${platform}`, { method: "DELETE" })); }
     catch (e) { setError((e as Error).message); }
   }
-  return <section className="settings-section">
+  const easy = accounts?.some(a => a.cutroomApp);
+  return <section className="settings-section" aria-labelledby="publishing-accounts-title">
     <div className="settings-heading"><div>
-      <h2>Auto-publishing accounts</h2>
-      <p>Stream autopilot posts clips straight to YouTube and TikTok through your own developer apps. App secrets and sign-in tokens are saved on this computer, readable only by your user account. They are never shown again, sent to the browser, or included in project backups.</p>
+      <h2 id="publishing-accounts-title">Auto-publishing accounts</h2>
+      <p>{easy ? "Connect the channels Stream autopilot should post to." : "Stream autopilot posts clips straight to YouTube and TikTok through your own developer apps."} Sign-in tokens{easy ? "" : " and app secrets"} are saved on this computer, readable only by your user account. They are never shown again, sent to the browser, or included in project backups.</p>
     </div></div>
-    {!accounts && !error && <p role="status">Loading accounts…</p>}
-    {accounts?.map(a => <div className="social-channel" key={a.platform}>
-      <h3 className="social-account-title">{names[a.platform].title}</h3>
-      <AppCredentials account={a} update={setAccounts} />
-      <p className="suggestion-note provider-endpoint">Redirect URI to register: {a.redirectUri}</p>
-      {a.connected && <p className="suggestion-note"><Check size={14} aria-hidden /> Connected{a.account ? ` as ${a.account}` : ""}</p>}
-      {a.appConfigured && <div className="provider-key-actions">
-        <Button disabled={waiting === a.platform} variant={a.connected ? "ghost" : "default"} onClick={() => void connect(a.platform)}>
-          {waiting === a.platform ? "Waiting for sign-in in the other tab…" : a.connected ? "Reconnect" : `Connect ${names[a.platform].title} account`}</Button>
-        {a.connected && <Button variant="ghost" onClick={() => void disconnect(a.platform)}>Disconnect</Button>}
-      </div>}
-    </div>)}
+    {!accounts && !error && <p role="status" className="suggestion-note"><LoaderCircle size={14} className="spin" aria-hidden /> Loading accounts…</p>}
+    {accounts && <div className="account-cards">
+      {accounts.map(a => <AccountCard key={a.platform} account={a} waiting={waiting === a.platform} update={setAccounts}
+        connect={() => void connect(a.platform)} disconnect={() => void disconnect(a.platform)} />)}
+    </div>}
     {error && <p role="alert" className="error-message">{error}</p>}
   </section>;
 }

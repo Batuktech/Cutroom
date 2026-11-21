@@ -35,7 +35,9 @@ export async function uploadYoutube(file: string, meta: UploadMeta, signal?: Abo
   }, "YouTube");
   if (init.status >= 400) {
     const reason = youtubeReason(init.body);
-    throw new SocialError(reason === "quotaExceeded" ? "YouTube's daily API quota is used up (about 6 uploads per day by default). Retry tomorrow or request more quota."
+    throw new SocialError(reason === "quotaExceeded" ? (socialAccounts.sourceOf("youtube") === "cutroom"
+      ? "Cutroom's shared YouTube upload quota is used up for today. Retry tomorrow, or add your own Google app in Settings for a separate quota."
+      : "YouTube's daily API quota is used up (about 6 uploads per day by default). Retry tomorrow or request more quota.")
       : reason === "uploadLimitExceeded" ? "This YouTube channel reached its upload limit for now."
       : `YouTube refused the upload (HTTP ${init.status}${reason ? `, ${reason.slice(0, 60)}` : ""}).`, true, reason ?? "http");
   }
@@ -67,7 +69,9 @@ async function tiktok(route: string, token: string, body: unknown, signal?: Abor
   const envelope = tiktokEnvelope.safeParse(response.body);
   const code = envelope.data?.error?.code;
   if (response.status >= 400 || !envelope.success || (code && code !== "ok"))
-    throw new SocialError(tiktokMessages[code ?? ""] ?? `TikTok refused the request (HTTP ${response.status}${code ? `, ${code.slice(0, 60)}` : ""}).`, true, code);
+    throw new SocialError((code === "reached_active_user_cap" && socialAccounts.sourceOf("tiktok") === "cutroom"
+      ? "Cutroom's TikTok app reached its daily posting quota. Retry tomorrow, or add your own TikTok app in Settings." : tiktokMessages[code ?? ""])
+      ?? `TikTok refused the request (HTTP ${response.status}${code ? `, ${code.slice(0, 60)}` : ""}).`, true, code);
   return envelope.data.data;
 }
 /** TikTok chunks are 5–64 MB; the final chunk absorbs the remainder and files under 5 MB go whole. */

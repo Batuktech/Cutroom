@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, Check, CircleDashed, ExternalLink, LoaderCircle, RotateCcw, Send, X } from "lucide-react";
+import { AlertCircle, AudioLines, Check, CircleDashed, Download, ExternalLink, LoaderCircle, Radio, RotateCcw, ScanSearch, Send, Smartphone, X } from "lucide-react";
 import type { Health } from "../../shared/types";
 import type { AutopostPlatform, SocialAccountStatus, StreamPart, StreamRecord, StreamRequest, StreamReviewer, TiktokMode } from "../../shared/streams";
 import { streamLanguages } from "../../shared/streams";
@@ -9,6 +9,13 @@ import { useAIProviders } from "../lib/useAIProviders";
 import { Button } from "./ui/button";
 import { Select, SelectItem } from "./ui/select";
 
+const pipeline: [typeof Send, string, string][] = [
+  [Download, "Download", "The VOD in one-hour parts"],
+  [AudioLines, "Transcribe", "Whisper large-v3, on this computer"],
+  [ScanSearch, "Pick moments", "Scored for hook, payoff and clarity"],
+  [Smartphone, "Render 9:16", "Face framing and burned-in captions"],
+  [Send, "Post", "YouTube Shorts and TikTok, if you opt in"],
+];
 const platformName: Record<AutopostPlatform, string> = { youtube: "YouTube Shorts", tiktok: "TikTok" };
 const reviewerName: Record<StreamReviewer, string> = { local: "Qwen", "claude-code": "Claude" };
 const stageText = (stage: StreamPart["stage"], reviewer: StreamReviewer = "local") => ({
@@ -56,6 +63,7 @@ export function Streams({ health, openProject, openSettings, notify }: {
   ];
   const connected = (p: AutopostPlatform) => accounts.find(a => a.platform === p)?.connected;
   const account = (p: AutopostPlatform) => accounts.find(a => a.platform === p)?.account;
+  const source = (p: AutopostPlatform) => accounts.find(a => a.platform === p)?.appSource;
   const blocked = checks.some(c => !c.ok);
 
   async function start(event: React.FormEvent) {
@@ -89,6 +97,14 @@ export function Streams({ health, openProject, openSettings, notify }: {
         <p>Paste a finished stream. Cutroom splits it into one-hour projects, transcribes each with Whisper large-v3, lets local Qwen or your Claude sign-in pick the strongest moments, then renders and posts the best ones.</p>
       </div>
     </div>
+    <ol className="pipeline" aria-label="How Stream autopilot works">
+      {pipeline.map(([Icon, title, detail], i) => <li key={title}>
+        <span className="pipeline-index">{String(i + 1).padStart(2, "0")}</span>
+        <Icon size={18} aria-hidden />
+        <strong>{title}</strong>
+        <span>{detail}</span>
+      </li>)}
+    </ol>
 
     <section className="settings-section stream-start" aria-labelledby="stream-start-title">
       <div className="stream-start-head">
@@ -157,7 +173,10 @@ export function Streams({ health, openProject, openSettings, notify }: {
                 <SelectItem value="direct" hint="Private only until TikTok audits the app">Post directly</SelectItem>
               </Select>
             </label>}
-            <p className="suggestion-note">Unverified Google API projects can only upload privately, and YouTube's default quota allows about 6 uploads a day.
+            <p className="suggestion-note">
+              {form.platforms.includes("youtube") && (source("youtube") === "cutroom"
+                ? "YouTube uploads share Cutroom's daily quota; if it runs out, Retry failed steps continues the next day."
+                : "Unverified Google API projects can only upload privately, and YouTube's default quota allows about 6 uploads a day.")}
               {form.platforms.includes("tiktok") && (form.tiktokMode === "draft"
                 ? " TikTok drafts keep at most 5 waiting per day; open each one in TikTok, paste the caption and choose who can watch."
                 : " Until TikTok audits the app, direct posts are private and the TikTok account itself must be private.")}</p>
@@ -179,7 +198,10 @@ export function Streams({ health, openProject, openSettings, notify }: {
       <h2 id="stream-list-title">Streams</h2>
       {loadError && <p role="alert" className="error-message">{loadError}</p>}
       {!streams && !loadError && <p role="status" className="suggestion-note">Loading streams…</p>}
-      {streams?.length === 0 && <p className="suggestion-note">No streams yet. Paste a finished YouTube VOD above; its parts and published posts will show up here.</p>}
+      {streams?.length === 0 && <div className="stream-empty">
+        <Radio size={20} aria-hidden />
+        <p><strong>No streams yet.</strong> Paste a finished YouTube VOD above. Its parts, picked clips and post links will show up here as they finish.</p>
+      </div>}
       {streams?.map(stream => <article className="stream-card" key={stream.id}>
         <header>
           <div>

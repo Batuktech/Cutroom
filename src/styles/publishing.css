@@ -27,3 +27,35 @@
   .tiktok-preview { max-height: 50vh; }
   .tiktok-disclosure { padding-left: 0; }
 }
+
+/* Auto-publishing account cards in Settings. */
+.account-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 14px; }
+.account-card { display: grid; align-content: start; gap: 14px; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); min-width: 0; }
+.account-card.account-connected { border-color: #5f6f45; }
+.account-card-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; }
+.account-mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 9px; border: 1px solid var(--line); background: var(--panel-raised); color: var(--text); }
+.account-connected .account-mark { color: var(--accent); border-color: #5f6f45; }
+.account-card-title h3 { font-size: .98rem; line-height: 1.3; }
+.account-card-title p { color: var(--muted); font-size: .76rem; line-height: 1.55; margin-top: 3px; }
+.account-state { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-size: .7rem; font-weight: 650; padding: 4px 9px;
+  border-radius: 6px; border: 1px solid var(--line); color: var(--muted); }
+.account-connected .account-state { color: var(--accent); border-color: #5f6f45; background: #1f2618; }
+.account-waiting .account-state { color: var(--text); }
+.account-setup .account-state { color: #f3d27a; border-color: #6a5a32; }
+.account-who { font-size: .88rem; font-weight: 650; overflow-wrap: anywhere; }
+.account-who small { font-size: .74rem; font-weight: 500; color: var(--muted); }
+.account-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.account-trust { display: flex; gap: 8px; align-items: flex-start; color: var(--muted); font-size: .74rem; line-height: 1.6; }
+.account-trust svg { color: var(--accent); margin-top: 2px; }
+.account-advanced { border-top: 1px solid var(--line); padding-top: 10px; }
+.account-advanced summary { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; cursor: pointer; color: var(--muted); font-size: .76rem; font-weight: 650; list-style: none; }
+.account-advanced summary::-webkit-details-marker { display: none; }
+.account-advanced summary:hover { color: var(--text); }
+.account-advanced summary svg { transition: transform .15s; }
+.account-advanced[open] summary svg { transform: rotate(180deg); }
+.account-card .social-app-form .social-fields { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 420px) {
+  .account-card-head { grid-template-columns: auto minmax(0, 1fr); }
+  .account-state { grid-column: 1 / -1; justify-self: start; }
+}
+@media (prefers-reduced-motion: reduce) { .account-advanced summary svg { transition: none; } }

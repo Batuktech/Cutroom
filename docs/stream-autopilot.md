@@ -29,7 +29,9 @@ Under **Find clips and write titles with**, choose **Claude Code · your Claude 
 
 ## Publishing accounts
 
-Publishing uses your own developer apps. Postiz is not needed. Open **Settings → Auto-publishing accounts**, paste each app's client ID (or TikTok client key) and client secret, and choose **Save app credentials**. Then use **Connect**. Sign-in opens in a new tab and returns to the loopback redirect URI shown in Settings. App secrets and refresh tokens are stored owner-only (mode 600) in `social-accounts.json` inside the data folder. The secret is never sent back to the browser; Settings shows only the start of the client ID. They are never written to projects, backups, or job history. Saving a different client ID disconnects that platform's account, because its sign-in belongs to the old app.
+Open **Settings → Auto-publishing accounts**. Postiz is not needed. When this build of Cutroom includes [Cutroom's own apps](cutroom-apps.md), choose **Connect YouTube** or **Connect TikTok** and sign in on the platform's page; no developer setup is needed. Cutroom's apps share one daily upload quota between all users, and Cutroom's TikTok app works only on the default port 4318. Your own developer app, under **Use my own developer app instead**, gets its own quota and works on any port.
+
+To use your own developer apps, paste each app's client ID (or TikTok client key) and client secret, and choose **Save app credentials**. Then use **Connect**. Sign-in opens in a new tab and returns to the loopback redirect URI shown in Settings. App secrets and refresh tokens are stored owner-only (mode 600) in `social-accounts.json` inside the data folder. The secret is never sent back to the browser; Settings shows only the start of the client ID. They are never written to projects, backups, or job history. Saving a different client ID disconnects that platform's account, because its sign-in belongs to the old app.
 
 As an alternative, set `YOUTUBE_CLIENT_ID`/`YOUTUBE_CLIENT_SECRET` and `TIKTOK_CLIENT_KEY`/`TIKTOK_CLIENT_SECRET` in your private `.env` and restart. Credentials saved in Settings take precedence over `.env`.
 

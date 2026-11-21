@@ -54,6 +54,62 @@ describe("social account sign-in", () => {
   });
 });
 
+describe("Cutroom's own apps", () => {
+  const builtIn = { youtube: { clientId: "cutroom-youtube-client", clientSecret: "cutroom-installed-secret" },
+    tiktok: { clientKey: "cutroom-tiktok-key", tokenService: "https://cutroom.example/api/tiktok/token" } };
+  it("connects with no developer setup and sends TikTok grants through the token service without a secret", async () => {
+    const accounts = new SocialAccounts({ CUTROOM_PORT: "4318" }, path.join(await scratch(), "tokens.json"), builtIn);
+    expect(accounts.status().map(a => [a.appSource, a.cutroomApp, a.clientHint])).toEqual([["cutroom", true, undefined], ["cutroom", true, undefined]]);
+    expect(JSON.stringify(accounts.status())).not.toContain("cutroom-installed-secret");
+    expect(new URL(accounts.connect("youtube").url).searchParams.get("client_id")).toBe("cutroom-youtube-client");
+    const state = new URL(accounts.connect("tiktok").url).searchParams.get("state")!;
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(json({ access_token: "access", expires_in: 3600, refresh_token: "refresh-1" }))
+      .mockResolvedValueOnce(json({ data: { creator_username: "creator" }, error: { code: "ok" } }));
+    vi.stubGlobal("fetch", fetchMock);
+    await accounts.callback("tiktok", { code: "abc", state });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("https://cutroom.example/api/tiktok/token");
+    const grant = JSON.parse(init.body);
+    expect(grant).toMatchObject({ grant_type: "authorization_code", code: "abc", redirect_uri: "http://127.0.0.1:4318/api/social/tiktok/callback" });
+    expect(grant.code_verifier).toMatch(/^[\w-]{43,128}$/);
+    expect(grant).not.toHaveProperty("client_secret");
+    expect(accounts.status()[1]).toMatchObject({ connected: true, account: "@creator" });
+  });
+  it("blocks Cutroom's TikTok app on a non-default port but still allows a user's own app", async () => {
+    const accounts = new SocialAccounts({ CUTROOM_PORT: "4400" }, path.join(await scratch(), "tokens.json"), builtIn);
+    expect(accounts.status()[1].cutroomAppBlocked).toContain("4318");
+    expect(() => accounts.connect("tiktok")).toThrow("4318");
+    expect(() => accounts.connect("youtube")).not.toThrow();
+    await accounts.setApp("tiktok", { clientId: "own-tiktok-key-1", clientSecret: "own-tiktok-secret" });
+    expect(accounts.status()[1].appSource).toBe("saved");
+    expect(() => accounts.connect("tiktok")).not.toThrow();
+  });
+  it("prefers the user's app and drops a sign-in that belongs to another app", async () => {
+    const file = path.join(await scratch(), "tokens.json");
+    const accounts = new SocialAccounts({}, file, builtIn);
+    const state = new URL(accounts.connect("youtube").url).searchParams.get("state")!;
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(json({ access_token: "access", expires_in: 3600, refresh_token: "refresh" }))
+      .mockResolvedValueOnce(json({ items: [{ snippet: { title: "Channel" } }] })));
+    await accounts.callback("youtube", { code: "abc", state });
+    expect(accounts.status()[0].connected).toBe(true);
+    // .env credentials appearing later take precedence; the Cutroom-app sign-in cannot be refreshed by them.
+    const withEnv = new SocialAccounts({ YOUTUBE_CLIENT_ID: "env-client-id-111111", YOUTUBE_CLIENT_SECRET: "env-secret-value" }, file, builtIn);
+    await withEnv.load();
+    expect(withEnv.status()[0]).toMatchObject({ appSource: "environment", connected: false });
+    const back = new SocialAccounts({}, file, builtIn);
+    await back.load();
+    expect(back.status()[0]).toMatchObject({ appSource: "cutroom", connected: true });
+  });
+  it("reports token-service outages without TikTok's wording", async () => {
+    const accounts = new SocialAccounts({}, path.join(await scratch(), "tokens.json"), builtIn);
+    const state = new URL(accounts.connect("tiktok").url).searchParams.get("state")!;
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(json({ error: "not_configured" }, 503)));
+    await expect(accounts.callback("tiktok", { code: "abc", state })).rejects.toThrow("sign-in service is unavailable");
+  });
+});
+
 describe("app credentials entered in Settings", () => {
   it("saves over .env, never exposes the secret, and drops sign-ins from a replaced app", async () => {
     const file = path.join(await scratch(), "tokens.json");
