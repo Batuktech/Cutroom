@@ -16,6 +16,8 @@
 - TikTok uploads from unaudited apps fall back to a private post instead of failing when Public was chosen.
 - Every dropdown is now a styled, keyboard-accessible listbox with the chosen option marked and short hints under choices; checkboxes and fields get clearer hover, focus and checked states.
 - Stream autopilot shows requirements as a readiness checklist, publishing targets as cards with the connected account, and a parts-analyzed progress bar on each stream.
+- **Connect YouTube** and **Connect TikTok** can use Cutroom's own apps with no developer setup, once a release ships their IDs. Users' own apps still take precedence. Cutroom's TikTok secret stays in a small token service on cutroom.batuukka.com that forwards code and refresh exchanges without storing them. See [Cutroom's own publishing apps](docs/cutroom-apps.md).
+- Settings shows each publishing account as a card with its connection state, and Stream autopilot explains its five stages up front.
 - YouTube range imports fetch the video in parallel 10 MB pieces instead of one throttled stream, and encode with NVENC when an NVIDIA encoder is available; a one-hour part now takes minutes instead of about half an hour.
 
 ## 0.1.0 — initial public source

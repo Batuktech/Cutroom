@@ -24,7 +24,7 @@
 
   <main id="main" class="doc">
     <h1>Privacy policy</h1>
-    <p class="updated">Effective November 2, 2026</p>
+    <p class="updated">Effective November 22, 2026</p>
 
     <p class="note">Cutroom is software you install and run on your own computer. The Cutroom project does not operate a server that receives your videos, transcripts or account data. Information described here stays on your computer unless you choose a service that sends it elsewhere, as explained below.</p>
 
@@ -39,7 +39,7 @@
       <li>job history and downloaded speech and language models;</li>
       <li>the YouTube and TikTok connection details described below.</li>
     </ul>
-    <p>We do not receive this information. Cutroom has no user accounts, analytics, advertising or tracking.</p>
+    <p>We do not receive this information. The only exception is the TikTok sign-in exchange described below, which passes through our token service without being stored. Cutroom has no user accounts, analytics, advertising or tracking.</p>
 
     <h2>YouTube and Google account data</h2>
     <p>If you connect a YouTube channel, Cutroom uses Google OAuth and asks for these permissions:</p>
@@ -64,7 +64,7 @@
         <tr><td><code>video.publish</code></td><td>Posts a clip you approve directly, with the caption and privacy setting you chose.</td></tr>
       </tbody>
     </table>
-    <p>The TikTok tokens and display name are stored the same way as the Google ones, and are sent only to TikTok's APIs. TikTok's handling of your data is described in the <a href="https://www.tiktok.com/legal/page/global/privacy-policy/en">TikTok Privacy Policy</a>.</p>
+    <p>The TikTok tokens and display name are stored the same way as the Google ones. If you connect through Cutroom's own TikTok app (rather than a developer app you created), Cutroom on your computer sends the one-time sign-in code, and later the refresh token, to Cutroom's token service at <code>cutroom.batuukka.com</code>. That service adds the app's secret, forwards the request to TikTok, and returns TikTok's answer to your computer. It does not store or log the codes or tokens, and it never receives your videos, captions or account details. Otherwise the tokens are sent only to TikTok's APIs. TikTok's handling of your data is described in the <a href="https://www.tiktok.com/legal/page/global/privacy-policy/en">TikTok Privacy Policy</a>.</p>
 
     <h2>Services you can choose to use</h2>
     <p>These features send information off your computer only when you turn them on:</p>

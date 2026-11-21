@@ -92,11 +92,16 @@ export const projectStreamSchema = z.object({
 export interface SocialAccountStatus {
   platform: AutopostPlatform;
   appConfigured: boolean;
-  appSource: "saved" | "environment" | null;
+  /** "cutroom" is Cutroom's own verified app, used when the user has not added one. */
+  appSource: "saved" | "environment" | "cutroom" | null;
   clientHint?: string;
   connected: boolean;
   account?: string;
   redirectUri: string;
+  /** Cutroom ships its own app for this platform, so connecting needs no developer setup. */
+  cutroomApp: boolean;
+  /** Why Cutroom's app cannot sign in on this install, for example a non-default port for TikTok. */
+  cutroomAppBlocked?: string;
 }
 
 /** Plans consecutive one-hour parts; a trailing sliver under a minute joins the previous part. */

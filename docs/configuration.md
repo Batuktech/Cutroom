@@ -8,7 +8,8 @@ Run all commands from the checkout root. Copy [.env.example](../.env.example) to
 | `POSTIZ_API_KEY` | Unset | Optional server-only key for [Postiz publishing](publishing.md). A UI session key takes precedence. |
 | `CUTROOM_POSTIZ_API_URL` | `https://api.postiz.com/public/v1` | Trusted Postiz API URL ending in `/public/v1`. HTTPS required except localhost HTTP. |
 | `CUTROOM_CUSTOM_AI_BASE_URL` | Unset | Trusted HTTPS OpenAI-compatible API base for Custom review; configured on the server only. |
-| `CUTROOM_PORT` | `4318` | Loopback API and built UI port. |
+| `CUTROOM_PORT` | `4318` | Loopback API and built UI port. Cutroom's own TikTok app only signs in on 4318. |
+| `CUTROOM_APP_*` | Unset | Maintainer testing of [Cutroom's own publishing apps](cutroom-apps.md) before their IDs ship in source. |
 | `CUTROOM_DATA_DIR` | `.cutroom` | Project metadata, copied media, exports, history, and downloaded models. Relative paths resolve from the working directory. |
 | `CUTROOM_VULKAN_DEVICE` | `1` | Vulkan physical device index used by the Qwen worker. Hardware-specific; check [Qwen setup](qwen-setup.md). |
 

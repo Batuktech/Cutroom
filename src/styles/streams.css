@@ -68,3 +68,31 @@
 .social-app-form .field-label { margin: 8px 0; }
 .social-setup-steps { margin: 4px 0 12px; padding-left: 20px; color: var(--muted); font-size: .8rem; line-height: 1.8; }
 .social-channel .suggestion-note svg { vertical-align: -2px; color: var(--accent); }
+/* Autopilot pipeline: five numbered stages separated by cut ticks. */
+.pipeline { list-style: none; margin: 0 0 24px; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel); overflow: hidden; }
+.pipeline li { position: relative; display: grid; gap: 4px; align-content: start; padding: 16px 16px 18px; min-width: 0; }
+.pipeline li + li { border-left: 1px solid var(--line); }
+.pipeline li + li::before { content: ""; position: absolute; left: -4px; top: 50%; width: 7px; height: 7px; background: var(--panel);
+  border-top: 1px solid var(--line); border-right: 1px solid var(--line); transform: translateY(-50%) rotate(45deg); }
+.pipeline svg { color: var(--accent); margin: 6px 0 4px; }
+.pipeline-index { font-size: .64rem; font-weight: 700; letter-spacing: .12em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pipeline strong { font-size: .86rem; font-weight: 650; }
+.pipeline li > span:last-child { color: var(--muted); font-size: .72rem; line-height: 1.5; }
+@media (max-width: 900px) {
+  .pipeline { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .pipeline li + li { border-left: 0; }
+  .pipeline li { border-bottom: 1px solid var(--line); }
+  .pipeline li::before { display: none; }
+  .pipeline { border-bottom: 0; }
+}
+@media (max-width: 600px) {
+  .pipeline { grid-template-columns: minmax(0, 1fr); border-bottom: 1px solid var(--line); }
+  .pipeline li { grid-template-columns: 22px 20px minmax(0, 1fr); column-gap: 10px; row-gap: 0; padding: 11px 14px; align-items: center; }
+  .pipeline li:last-child { border-bottom: 0; }
+  .pipeline svg { margin: 0; }
+  .pipeline li > span:last-child { grid-column: 3; }
+}
+.stream-empty { display: flex; gap: 14px; align-items: flex-start; padding: 20px; border: 1px dashed #4d5844; border-radius: 10px; color: var(--muted); font-size: .82rem; line-height: 1.6; }
+.stream-empty svg { color: var(--accent); margin-top: 2px; }
+.stream-empty strong { color: var(--text); font-weight: 650; }
