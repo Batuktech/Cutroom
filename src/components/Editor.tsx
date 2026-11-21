@@ -21,6 +21,7 @@ import { api, post } from "../lib/api";
 import { time } from "../lib/utils";
 import { Button } from "./ui/button";
 import { Dialog } from "./ui/dialog";
+import { Select, SelectItem } from "./ui/select";
 import { Preview } from "./Preview";
 import { Timeline } from "./Timeline";
 import { Inspector } from "./Inspector";
@@ -549,10 +550,10 @@ export function Editor({
         </div>
         <label className="field-label">
           Resolution
-          <select value={quality} onChange={(e) => setQuality(e.target.value)}>
-            <option value="1080">1080p · Full HD</option>
-            <option value="720">720p · Smaller file, faster render</option>
-          </select>
+          <Select value={quality} onValueChange={setQuality}>
+            <SelectItem value="1080" hint="Full HD">1080p</SelectItem>
+            <SelectItem value="720" hint="Smaller file, faster render">720p</SelectItem>
+          </Select>
         </label>
         <p className="notice">
           {draft?.captions && project.transcript.length
@@ -578,21 +579,17 @@ export function Editor({
       >
         <label className="field-label">
           Local model
-          <select value={model} onChange={(e) => setModel(e.target.value)}>
+          <Select value={model} onValueChange={setModel}>
             {health?.models.map((m) => (
-              <option key={m.id} value={m.id} disabled={!m.installed}>
+              <SelectItem key={m.id} value={m.id} disabled={!m.installed} hint={m.installed ? undefined : "Not installed · add it in Settings"}>
                 {m.name}
-                {m.installed ? "" : " · not installed"}
-              </option>
+              </SelectItem>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="field-label">
           Spoken language
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-          >
+          <Select value={language} onValueChange={setLanguage}>
             {[
               ["auto", "Detect automatically"],
               ["en", "English"],
@@ -610,11 +607,11 @@ export function Editor({
               ["hi", "Hindi"],
               ["tr", "Turkish"],
             ].map(([v, label]) => (
-              <option key={v} value={v}>
+              <SelectItem key={v} value={v}>
                 {label}
-              </option>
+              </SelectItem>
             ))}
-          </select>
+          </Select>
         </label>
         {project.transcript.length > 0 && (
           <p className="notice">

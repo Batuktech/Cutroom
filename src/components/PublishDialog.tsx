@@ -6,6 +6,7 @@ import { useAIProviders } from "../lib/useAIProviders";
 import { api, post } from "../lib/api";
 import { Button } from "./ui/button";
 import { Dialog } from "./ui/dialog";
+import { Select, SelectItem } from "./ui/select";
 import { PublishingChannel } from "./PublishingChannel";
 
 export function PublishDialog({ project, clip, jobs, health, close, refresh, openSettings }: {
@@ -115,12 +116,12 @@ export function PublishDialog({ project, clip, jobs, health, close, refresh, ope
     {preparation && copy && <>
       <details className="suggestion-extra"><summary>Generate titles, descriptions and hashtags</summary>
         <fieldset className="social-fieldset" disabled={pending || !!active || !!copyJob}>
-          <div className="social-fields"><label className="field-label">Write with<select value={provider} onChange={e => { const p = e.target.value as AIProvider; setProvider(p); setModel(providerDetails[p].model); setCloudConsent(false); setFormat("auto"); }}>
-            <option value="local">Local Qwen3-8B</option>{cloudProviders.map(p => <option key={p} value={p}>{providerDetails[p].name}</option>)}
-          </select></label><label className="field-label">Copy language<input value={language} maxLength={60} onChange={e => { setLanguage(e.target.value); setCloudConsent(false); }} /></label></div>
+          <div className="social-fields"><label className="field-label">Write with<Select value={provider} onValueChange={v => { const p = v as AIProvider; setProvider(p); setModel(providerDetails[p].model); setCloudConsent(false); setFormat("auto"); }}>
+            <SelectItem value="local">Local Qwen3-8B</SelectItem>{cloudProviders.map(p => <SelectItem key={p} value={p}>{providerDetails[p].name}</SelectItem>)}
+          </Select></label><label className="field-label">Copy language<input value={language} maxLength={60} onChange={e => { setLanguage(e.target.value); setCloudConsent(false); }} /></label></div>
           {provider !== "local" ? <>
             <label className="field-label">Model ID<input value={model} maxLength={120} onChange={e => { setModel(e.target.value); setCloudConsent(false); }} /></label>
-            {!schemaOnlyProviders.includes(provider) && <label className="field-label">Output format<select value={format} onChange={e => setFormat(e.target.value as typeof format)}><option value="auto">Provider default</option><option value="json_schema">JSON schema</option><option value="json_object">JSON object</option></select></label>}
+            {!schemaOnlyProviders.includes(provider) && <label className="field-label">Output format<Select value={format} onValueChange={v => setFormat(v as typeof format)}><SelectItem value="auto">Provider default</SelectItem><SelectItem value="json_schema">JSON schema</SelectItem><SelectItem value="json_object">JSON object</SelectItem></Select></label>}
             <p className="suggestion-note provider-endpoint">Destination: {providerStatus?.endpoint || "Not configured"}. {provider === "claude-code" ? "One Claude Code request per clip; it uses your Claude plan's usage." : "One API request per clip; your provider may charge."}</p>
             {!providerStatus?.configured && <p className="notice">{provider === "claude-code" ? "Install Claude Code and sign in with claude in a terminal, then check again in Studio settings." : "Add this provider's key in Studio settings first."}</p>}
             <label className="social-check"><input type="checkbox" checked={cloudConsent} onChange={e => setCloudConsent(e.target.checked)} />Share this clip's transcript, title and copy language with the selected provider for this request.</label>
@@ -152,8 +153,8 @@ export function PublishDialog({ project, clip, jobs, health, close, refresh, ope
       </section>
       <fieldset className="social-fieldset" disabled={pending || !!active}>
         <div className="social-fields">
-          <label className="field-label">Delivery<select value={mode} onChange={e => { setMode(e.target.value as typeof mode); setConsent(false); requestId.current = crypto.randomUUID(); }}><option value="draft">Draft in Postiz</option><option value="schedule">Schedule through Postiz</option><option value="now">Publish when ready</option></select></label>
-          <label className="field-label">Render resolution<select value={quality} onChange={e => setQuality(e.target.value as typeof quality)}><option value="1080">1080p</option><option value="720">720p</option></select></label>
+          <label className="field-label">Delivery<Select value={mode} onValueChange={v => { setMode(v as typeof mode); setConsent(false); requestId.current = crypto.randomUUID(); }}><SelectItem value="draft">Draft in Postiz</SelectItem><SelectItem value="schedule">Schedule through Postiz</SelectItem><SelectItem value="now">Publish when ready</SelectItem></Select></label>
+          <label className="field-label">Render resolution<Select value={quality} onValueChange={v => setQuality(v as typeof quality)}><SelectItem value="1080">1080p</SelectItem><SelectItem value="720">720p</SelectItem></Select></label>
         </div>
         {mode === "schedule" && <label className="field-label">Publish at ({Intl.DateTimeFormat().resolvedOptions().timeZone})<input type="datetime-local" value={date} onChange={e => { setDate(e.target.value); setConsent(false); }} /></label>}
         <label className="social-check"><input type="checkbox" checked={reviewed} onChange={e => setReviewed(e.target.checked)} />I reviewed the selected channels, visibility, audience and content disclosures.</label>

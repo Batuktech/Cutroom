@@ -10,6 +10,7 @@ import { post } from "../lib/api";
 import { time } from "../lib/utils";
 import { Button } from "./ui/button";
 import { Dialog } from "./ui/dialog";
+import { Select, SelectItem } from "./ui/select";
 import { useVideoClock } from "../lib/useVideoClock";
 
 function PassagePreview({ project, candidate }: { project: Project; candidate: ClipSuggestion }) {
@@ -107,25 +108,25 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
     </div>
     {method === "ai" ? <>
       <div className="ai-provider-controls">
-        <label className="field-label">Review with<select value={provider} disabled={pending || !!active} onChange={e => {
-          const next = e.target.value as AIProvider;
+        <label className="field-label">Review with<Select value={provider} disabled={pending || !!active} onValueChange={v => {
+          const next = v as AIProvider;
           changeOptions({ provider: next, model: providerDetails[next].model, outputFormat: "auto" }); setConsent(false);
         }}>
-          <option value="local">Local Qwen3-8B · no API cost</option>
-          {cloudProviders.map(id => <option key={id} value={id}>{providerDetails[id].name} · {id === "claude-code" ? "your Claude sign-in" : "your API key"}</option>)}
-        </select></label>
+          <SelectItem value="local" hint="No API cost">Local Qwen3-8B</SelectItem>
+          {cloudProviders.map(id => <SelectItem key={id} value={id} hint={id === "claude-code" ? "Your Claude sign-in" : "Your API key"}>{providerDetails[id].name}</SelectItem>)}
+        </Select></label>
         {cloud && <>
           <div className="suggestion-controls">
             <label className="field-label">Model ID<input value={options.model ?? ""} disabled={pending || !!active} maxLength={120} autoComplete="off" spellCheck={false}
               placeholder={providerDetails[provider].model || "Exact model ID from your provider"} onChange={e => changeOptions({ model: e.target.value })} /></label>
-            <label className="field-label">Request cap per analysis<select value={options.maxRequests ?? 20} disabled={pending || !!active} onChange={e => changeOptions({ maxRequests: Number(e.target.value) })}>
-              {[1, 5, 10, 20, 40, 60, 100].map(n => <option key={n} value={n}>Up to {n} {n === 1 ? "request" : "requests"}</option>)}
-            </select></label>
+            <label className="field-label">Request cap per analysis<Select value={String(options.maxRequests ?? 20)} disabled={pending || !!active} onValueChange={v => changeOptions({ maxRequests: Number(v) })}>
+              {[1, 5, 10, 20, 40, 60, 100].map(n => <SelectItem key={n} value={String(n)}>Up to {n} {n === 1 ? "request" : "requests"}</SelectItem>)}
+            </Select></label>
           </div>
-          {!schemaOnlyProviders.includes(provider) && <label className="field-label">Output compatibility<select value={options.outputFormat ?? "auto"} disabled={pending || !!active} onChange={e => changeOptions({ outputFormat: e.target.value as SuggestionOptions["outputFormat"] })}>
-            <option value="auto">Provider default · {providerDetails[provider].format === "json_object" ? "JSON mode" : "JSON schema"}</option>
-            <option value="json_schema">JSON schema</option><option value="json_object">JSON mode</option>
-          </select></label>}
+          {!schemaOnlyProviders.includes(provider) && <label className="field-label">Output compatibility<Select value={options.outputFormat ?? "auto"} disabled={pending || !!active} onValueChange={v => changeOptions({ outputFormat: v as SuggestionOptions["outputFormat"] })}>
+            <SelectItem value="auto">Provider default · {providerDetails[provider].format === "json_object" ? "JSON mode" : "JSON schema"}</SelectItem>
+            <SelectItem value="json_schema">JSON schema</SelectItem><SelectItem value="json_object">JSON mode</SelectItem>
+          </Select></label>}
           <p className="suggestion-note">{provider === "claude-code"
             ? "Use a Claude Code model name such as opus or sonnet. Each request runs claude once and uses your Claude plan's usage limits, which Anthropic may bill as extra usage. All proposals still pass local validation. Findings are saved as sections finish. Reaching the cap can leave a partial scan."
             : "Choose a model supporting the selected JSON format. JSON mode uses a schema in the prompt; all proposals still pass local validation. Each request allows up to 4,096 output tokens. This is a request cap, not a money limit; set a spending limit with your provider. Findings are saved as sections finish. Reaching the cap can leave a partial scan."}</p>
@@ -138,19 +139,19 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
       </div>
       <div className="suggestion-controls">
         <label className="field-label">Maximum clip length
-          <select value={options.maxDuration} disabled={pending || !!active} onChange={e => changeOptions({ maxDuration: Number(e.target.value) })}>
-            {[20, 30, 40, 50, 60, 70, 80, 90, 100].map(n => <option key={n} value={n}>Up to {n} seconds</option>)}
-          </select>
+          <Select value={String(options.maxDuration)} disabled={pending || !!active} onValueChange={v => changeOptions({ maxDuration: Number(v) })}>
+            {[20, 30, 40, 50, 60, 70, 80, 90, 100].map(n => <SelectItem key={n} value={String(n)}>Up to {n} seconds</SelectItem>)}
+          </Select>
         </label>
         <label className="field-label">Candidates to review
-          <select value={options.count} disabled={pending || !!active} onChange={e => changeOptions({ count: Number(e.target.value) })}>
-            {[5, 10, 20, 25, 30].map(n => <option key={n} value={n}>Up to {n} candidates</option>)}
-          </select>
+          <Select value={String(options.count)} disabled={pending || !!active} onValueChange={v => changeOptions({ count: Number(v) })}>
+            {[5, 10, 20, 25, 30].map(n => <SelectItem key={n} value={String(n)}>Up to {n} candidates</SelectItem>)}
+          </Select>
         </label>
         <label className="field-label">Review strictness
-          <select value={options.strictness} disabled={pending || !!active} onChange={e => changeOptions({ strictness: e.target.value as SuggestionOptions["strictness"] })}>
-            <option value="discovery">Discovery</option><option value="reviewed">Reviewed</option><option value="strict">Strict</option>
-          </select>
+          <Select value={options.strictness} disabled={pending || !!active} onValueChange={v => changeOptions({ strictness: v as SuggestionOptions["strictness"] })}>
+            <SelectItem value="discovery" hint="More candidates, looser checks">Discovery</SelectItem><SelectItem value="reviewed" hint="Balanced editorial review">Reviewed</SelectItem><SelectItem value="strict" hint="Fewer, safer picks">Strict</SelectItem>
+          </Select>
         </label>
       </div>
       <p className="suggestion-note">{options.strictness === "discovery"
@@ -168,12 +169,12 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
       {!options.interests.length && <p role="status" className="error-message">Choose at least one interest before starting.</p>}
       <details className="suggestion-extra"><summary>Timing limits & custom guidance</summary>
         <div className="suggestion-controls">
-          <label className="field-label">Minimum clip length<select value={options.minDuration} disabled={pending || !!active} onChange={e => changeOptions({ minDuration: Number(e.target.value) })}>
-            {[3, 5, 10, 15, 20].map(n => <option key={n} value={n}>{n} seconds</option>)}
-          </select></label>
-          <label className="field-label">Maximum pause within a clip<select value={options.maxPause} disabled={pending || !!active} onChange={e => changeOptions({ maxPause: Number(e.target.value) })}>
-            {[2, 4, 8, 15, 30].map(n => <option key={n} value={n}>{n} seconds</option>)}
-          </select></label>
+          <label className="field-label">Minimum clip length<Select value={String(options.minDuration)} disabled={pending || !!active} onValueChange={v => changeOptions({ minDuration: Number(v) })}>
+            {[3, 5, 10, 15, 20].map(n => <SelectItem key={n} value={String(n)}>{n} seconds</SelectItem>)}
+          </Select></label>
+          <label className="field-label">Maximum pause within a clip<Select value={String(options.maxPause)} disabled={pending || !!active} onValueChange={v => changeOptions({ maxPause: Number(v) })}>
+            {[2, 4, 8, 15, 30].map(n => <SelectItem key={n} value={String(n)}>{n} seconds</SelectItem>)}
+          </Select></label>
         </div>
         <label className="field-label">What else should the AI look for?
           <textarea rows={3} maxLength={600} value={options.guidance} disabled={pending || !!active} onChange={e => changeOptions({ guidance: e.target.value })} placeholder="For example: prioritize gambling stories and awkward comebacks; avoid routine introductions." />
@@ -182,9 +183,9 @@ export function SuggestionDialog({ open, close, project, health, jobs, refresh, 
       </details>
       <p className="suggestion-note">Eligible clips are {options.minDuration}–{options.maxDuration} seconds. A 20-second moment can qualify when the maximum is 100 seconds. {cloud ? "Cloud analysis scans sections within your request cap. A second review uses an additional request per candidate." : "Qwen scans the whole transcript locally and saves findings as sections finish. Long scans can still take many minutes."}</p>
     </> : <>
-      <label className="field-label">Aim for this length<select value={target} disabled={pending || !!active} onChange={e => setTarget(Number(e.target.value))}>
-        {[15, 20, 25, 30, 35, 60, 90].map(n => <option key={n} value={n}>{n} seconds</option>)}
-      </select></label>
+      <label className="field-label">Aim for this length<Select value={String(target)} disabled={pending || !!active} onValueChange={v => setTarget(Number(v))}>
+        {[15, 20, 25, 30, 35, 60, 90].map(n => <SelectItem key={n} value={String(n)}>{n} seconds</SelectItem>)}
+      </Select></label>
       <p className="suggestion-note">Finds keywords, questions, and pauses. Adds up to six editable clips immediately, without an AI content review.</p>
     </>}
     {method === "ai" && !cloud && !health?.qwen?.ready && <p role="status" className="error-message">{health?.qwen?.message || "Checking local Qwen availability…"} Fast transcript rules remain available.</p>}

@@ -3,6 +3,7 @@ import { cloudProviders, providerDetails, type CloudProvider, type ProviderStatu
 import { api } from "../lib/api";
 import { useAIProviders } from "../lib/useAIProviders";
 import { Button } from "./ui/button";
+import { Select, SelectItem } from "./ui/select";
 
 
 export function ProviderKeyForm({ provider, status, refresh }: {
@@ -87,9 +88,9 @@ export function AIProviderSettings() {
   return <section className="settings-section cloud-ai-settings">
     <div className="settings-heading"><div><h2>Cloud AI · bring your own key</h2>
       <p>Use an API model, or your own signed-in Claude Code, for clip suggestions. Local Qwen and free transcript rules remain available.</p></div></div>
-    <label className="field-label">Provider<select value={provider} onChange={e => setProvider(e.target.value as CloudProvider)}>
-      {cloudProviders.map(id => <option key={id} value={id}>{providerDetails[id].name}</option>)}
-    </select></label>
+    <label className="field-label">Provider<Select value={provider} onValueChange={v => setProvider(v as CloudProvider)}>
+      {cloudProviders.map(id => <SelectItem key={id} value={id}>{providerDetails[id].name}</SelectItem>)}
+    </Select></label>
     {provider === "claude-code"
       ? <ClaudeCodePanel status={statuses.find(s => s.provider === provider)} refresh={refresh} />
       : <ProviderKeyForm key={provider} provider={provider} status={statuses.find(s => s.provider === provider)} refresh={refresh} />}

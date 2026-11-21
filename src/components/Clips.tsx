@@ -5,8 +5,11 @@ import { post } from "../lib/api";
 import { time } from "../lib/utils";
 import { Button } from "./ui/button";
 import { Dialog } from "./ui/dialog";
+import { Select, SelectItem } from "./ui/select";
 import { Empty } from "./Empty";
 
+// Radix Select reserves the empty string for "no value", so "all" filters use a sentinel.
+const ALL = "__all";
 export function Clips({
   projects,
   openProject,
@@ -86,36 +89,36 @@ export function Clips({
           <div className="clip-filters">
             <label>
               Project
-              <select
-                value={projectFilter}
-                onChange={(event) => {
-                  setProjectFilter(event.target.value);
+              <Select
+                value={projectFilter || ALL}
+                onValueChange={(value) => {
+                  setProjectFilter(value === ALL ? "" : value);
                   setSelected(new Set());
                 }}
               >
-                <option value="">All projects</option>
+                <SelectItem value={ALL}>All projects</SelectItem>
                 {projects
                   .filter((project) => project.clips.length)
                   .map((project) => (
-                    <option key={project.id} value={project.id}>
+                    <SelectItem key={project.id} value={project.id}>
                       {project.name}
-                    </option>
+                    </SelectItem>
                   ))}
-              </select>
+              </Select>
             </label>
             <label>
               Status
-              <select
-                value={statusFilter}
-                onChange={(event) => {
-                  setStatusFilter(event.target.value);
+              <Select
+                value={statusFilter || ALL}
+                onValueChange={(value) => {
+                  setStatusFilter(value === ALL ? "" : value);
                   setSelected(new Set());
                 }}
               >
-                <option value="">All clips</option>
-                <option value="draft">Drafts</option>
-                <option value="exported">Exported</option>
-              </select>
+                <SelectItem value={ALL}>All clips</SelectItem>
+                <SelectItem value="draft">Drafts</SelectItem>
+                <SelectItem value="exported">Exported</SelectItem>
+              </Select>
             </label>
             <div className="batch-actions">
               <Button
@@ -242,14 +245,10 @@ export function Clips({
         </ul>
         <label className="field-label">
           Export resolution
-          <select
-            value={quality}
-            onChange={(event) => setQuality(event.target.value)}
-            disabled={busy}
-          >
-            <option value="1080">Full HD · 1080p</option>
-            <option value="720">Smaller file · 720p</option>
-          </select>
+          <Select value={quality} onValueChange={setQuality} disabled={busy}>
+            <SelectItem value="1080" hint="Full HD">1080p</SelectItem>
+            <SelectItem value="720" hint="Smaller file">720p</SelectItem>
+          </Select>
         </label>
         <p className="restore-note">
           Each render includes an MP4 and a separate SRT. Review the results in

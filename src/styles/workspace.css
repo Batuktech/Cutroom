@@ -431,13 +431,6 @@
   font-size: 0.72rem;
   color: var(--muted);
 }
-.sort-select {
-  border: 0;
-  background: transparent;
-  font-size: 0.64rem;
-  padding: 8px 22px 8px 6px;
-  cursor: pointer;
-}
 .view-toggle {
   display: flex;
   border: 1px solid var(--line);

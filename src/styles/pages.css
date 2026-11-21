@@ -394,7 +394,7 @@
   margin: 19px 0;
 }
 .field-label input,
-.field-label select {
+.field-label .select-trigger {
   width: 100%;
 }
 .upload-drop {

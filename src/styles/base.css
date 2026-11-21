@@ -27,7 +27,8 @@ body {
 button,
 input,
 select,
-textarea {
+textarea,
+.select-trigger {
   font: inherit;
 }
 button,
@@ -76,7 +77,8 @@ img {
 }
 input,
 textarea,
-select {
+select,
+.select-trigger {
   min-width: 0;
   color: var(--text);
   background: var(--panel);
@@ -91,7 +93,9 @@ textarea::placeholder {
 }
 input:focus,
 textarea:focus,
-select:focus {
+select:focus,
+.select-trigger:focus-visible,
+.select-trigger[data-state="open"] {
   border-color: var(--accent);
 }
 :focus-visible {
