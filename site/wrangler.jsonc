@@ -15,7 +15,7 @@
   },
   "vars": {
     // Cutroom's TikTok client key (public; it also appears in sign-in URLs). Leave empty until the app exists.
-    "TIKTOK_CLIENT_KEY": "",
+    "TIKTOK_CLIENT_KEY": "awq6zacy31khobii",
     "TIKTOK_REDIRECT_URIS": "http://127.0.0.1:4318/api/social/tiktok/callback"
   },
   // 20 token requests per minute per client IP; sign-in and hourly refreshes need far fewer.
